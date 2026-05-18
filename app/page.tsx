@@ -1,65 +1,122 @@
-import Image from "next/image";
+"use client"
+
+import { useState, useEffect } from "react"
+import { Header } from "@/components/home/header"
+import { FloatingCards, type Post } from "@/components/home/floating-cards"
+import { CameraButton } from "@/components/home/camera-button"
+import { CameraScreen } from "@/components/camera/camera-screen"
+import { UploadPreviewScreen } from "@/components/upload-preview-screen"
+
+type Screen = "home" | "camera" | "preview"
 
 export default function Home() {
+  const [currentScreen, setCurrentScreen] = useState<Screen>("home")
+  const [capturedImage, setCapturedImage] = useState<string | null>(null)
+  const [posts, setPosts] = useState<Post[]>([])
+  const [isTransitioning, setIsTransitioning] = useState(false)
+
+  // 1. 앱이 처음 켜질 때 브라우저 저장소(localStorage)에서 기존 사진 가져오기
+  useEffect(() => {
+    const savedPosts = localStorage.getItem("zzuggumi_posts")
+    if (savedPosts) {
+      try {
+        const parsedPosts = JSON.parse(savedPosts) as Post[]
+        const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000
+        const now = Date.now()
+        
+        // 가져오는 순간에도 이미 12시간이 지난 사진이 있다면 걸러내기
+        const validPosts = parsedPosts.filter(post => (now - post.createdAt) < TWELVE_HOURS_MS)
+        setPosts(validPosts)
+        localStorage.setItem("zzuggumi_posts", JSON.stringify(validPosts))
+      } catch (e) {
+        console.error("저장된 데이터를 불러오는 중 오류 발생:", e)
+      }
+    }
+  }, [])
+
+  // 2. 주기적으로 12시간 지난 포스트 감지해서 삭제하기 (1분마다 체크)
+  useEffect(() => {
+    const checkExpiration = () => {
+      const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000
+      const now = Date.now()
+
+      setPosts(prevPosts => {
+        const filtered = prevPosts.filter(post => (now - post.createdAt) < TWELVE_HOURS_MS)
+        if (filtered.length !== prevPosts.length) {
+          localStorage.setItem("zzuggumi_posts", JSON.stringify(filtered))
+          return filtered
+        }
+        return prevPosts
+      })
+    }
+
+    checkExpiration()
+    const interval = setInterval(checkExpiration, 60000)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  const handleCameraOpen = () => setCurrentScreen("camera")
+  
+  const handleCapture = (imageData: string) => {
+    setCapturedImage(imageData)
+    setCurrentScreen("preview")
+  }
+  
+  // 3. 업로드할 때 브라우저 저장소에도 함께 저장하기
+  const handleUpload = (questionText: string, mergedImage?: string) => {
+    if (capturedImage || mergedImage) {
+      const newPost: Post = {
+        id: Date.now().toString(),
+        imageData: mergedImage || capturedImage || "",
+        questionText,
+        createdAt: Date.now()
+      }
+      
+      setIsTransitioning(true)
+      setPosts(prevPosts => {
+        const updatedPosts = [newPost, ...prevPosts]
+        // 브라우저 저장소에 영구 보존(새로고침 대비)
+        localStorage.setItem("zzuggumi_posts", JSON.stringify(updatedPosts))
+        return updatedPosts
+      })
+      setCapturedImage(null)
+      setCurrentScreen("home")
+      
+      setTimeout(() => setIsTransitioning(false), 600)
+    }
+  }
+  
+  const handleClose = () => {
+    setCapturedImage(null)
+    setCurrentScreen("home")
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <>
+      <main 
+        className={`relative min-h-screen w-full max-w-md mx-auto bg-[#f3f3f1] overflow-hidden transition-opacity duration-300 ${
+          currentScreen !== "home" ? "opacity-0" : "opacity-100"
+        }`}
+      >
+        <Header />
+        <div className="relative h-[calc(100vh-80px)]">
+          <FloatingCards userPosts={posts} />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+        <CameraButton onClick={handleCameraOpen} />
       </main>
-    </div>
-  );
+
+      {currentScreen === "camera" && (
+        <CameraScreen onClose={handleClose} onCapture={handleCapture} />
+      )}
+
+      {currentScreen === "preview" && (
+        <UploadPreviewScreen
+          onClose={handleClose}
+          onUpload={handleUpload}
+          capturedImage={capturedImage || undefined}
+        />
+      )}
+    </>
+  )
 }
