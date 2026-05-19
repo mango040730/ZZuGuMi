@@ -15,6 +15,7 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
   const [isReady, setIsReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment")
+  // 만약 1x도 가깝게 느껴진다면 기본값을 0.5로 변경하세요.
   const [zoomLevel, setZoomLevel] = useState<number>(1)
 
   const zoomLevels = [0.5, 1, 2, 3, 5]
@@ -82,7 +83,8 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
         ctx.scale(-1, 1)
       }
       
-      const rawScale = zoomLevel * 2
+      // 강제로 2배율 하던 코드 제거
+      const rawScale = zoomLevel
       const sourceWidth = video.videoWidth / rawScale
       const sourceHeight = video.videoHeight / rawScale
       const sourceX = (video.videoWidth - sourceWidth) / 2
@@ -121,7 +123,8 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
             muted
             className="absolute inset-0 w-full h-full object-cover"
             style={{ 
-              transform: `scale(${facingMode === "user" ? -(zoomLevel * 2) : zoomLevel * 2}, ${zoomLevel * 2})`
+              // 에디터 색상 오류를 방지하기 위해 백틱 대신 문자열 덧셈 사용
+              transform: "scale(" + (facingMode === "user" ? -zoomLevel : zoomLevel) + ", " + zoomLevel + ")"
             }}
           />
         )}
