@@ -15,13 +15,10 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
   const [isReady, setIsReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment")
+  // 만약 1x도 가깝게 느껴진다면 기본값을 0.5로 변경하세요.
   const [zoomLevel, setZoomLevel] = useState<number>(1)
-  const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
 
   const zoomLevels = [0.5, 1, 2, 3, 5]
-
-  // 0.5배율(광각)인지 여부 판단
-  const isUltrawide = zoomLevel === 0.5
 
   useEffect(() => {
     async function startCamera() {
@@ -29,72 +26,16 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
         streamRef.current.getTracks().forEach(track => track.stop())
       }
       setIsReady(false)
-
+      
       try {
-        // 1. 카메라 장치 이름(label)을 읽기 위해 권한 요청 및 장치 목록 불러오기
-        let currentDevices = devices
-        if (currentDevices.length === 0 || currentDevices[0]?.label === "") {
-          const tempStream = await navigator.mediaDevices.getUserMedia({ video: true })
-          const allDevices = await navigator.mediaDevices.enumerateDevices()
-          currentDevices = allDevices.filter(d => d.kind === 'videoinput')
-          setDevices(currentDevices)
-          tempStream.getTracks().forEach(track => track.stop()) 
-        }
-
-        let videoConstraints: MediaTrackConstraints = {
-          facingMode: facingMode,
-          width: { ideal: 1080 },
-          height: { ideal: 1920 }
-        }
-
-        // 2. 후면 카메라일 경우에만 광각/일반 렌즈 구분
-        if (facingMode === "environment") {
-          // label 속성 텍스트를 기반으로 후면 카메라 필터링
-          const backCameras = currentDevices.filter(d => 
-            d.label.toLowerCase().includes("back") || 
-            d.label.includes("후면") ||
-            d.label.toLowerCase().includes("environment")
-          )
-          
-          // 후면 카메라를 명확히 찾지 못했다면 전체 카메라 풀 사용 (안전 장치)
-          const cameraPool = backCameras.length > 0 ? backCameras : currentDevices
-
-          if (isUltrawide) {
-            // 초광각 렌즈 찾기
-            const ultrawideCam = cameraPool.find(d => 
-              d.label.toLowerCase().includes("ultra") || 
-              (d.label.toLowerCase().includes("wide") && !d.label.toLowerCase().includes("telephoto")) || 
-              d.label.includes("광각") || 
-              d.label.includes("0.5")
-            )
-            
-            if (ultrawideCam) {
-              videoConstraints = {
-                deviceId: { exact: ultrawideCam.deviceId },
-                width: { ideal: 1080 },
-                height: { ideal: 1920 }
-              }
-            }
-          } else {
-            // 1배율 이상일 때는 일반 렌즈로 연결
-            const standardCam = cameraPool.find(d => 
-              !d.label.toLowerCase().includes("ultra") && 
-              !d.label.includes("광각") &&
-              !d.label.includes("0.5")
-            )
-            
-            if (standardCam) {
-              videoConstraints = {
-                deviceId: { exact: standardCam.deviceId },
-                width: { ideal: 1080 },
-                height: { ideal: 1920 }
-              }
-            }
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: facingMode,
+            width: { ideal: 1080 },
+            height: { ideal: 1920 }
           }
-        }
-
-        // 3. 최종 결정된 렌즈로 카메라 시작
-        const stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints })
+        })
+        
         streamRef.current = stream
         
         if (videoRef.current) {
@@ -117,7 +58,7 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
         streamRef.current.getTracks().forEach(track => track.stop())
       }
     }
-  }, [facingMode, isUltrawide, devices]) // 의존성 배열에 devices 추가
+  }, [facingMode])
 
   const handleClose = () => {
     if (streamRef.current) {
@@ -142,7 +83,8 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
         ctx.scale(-1, 1)
       }
       
-      const rawScale = isUltrawide ? 1 : zoomLevel
+      // 강제로 2배율 하던 코드 제거
+      const rawScale = zoomLevel
       const sourceWidth = video.videoWidth / rawScale
       const sourceHeight = video.videoHeight / rawScale
       const sourceX = (video.videoWidth - sourceWidth) / 2
@@ -168,8 +110,6 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
     setFacingMode(prev => prev === "environment" ? "user" : "environment")
   }
 
-  const displayScale = isUltrawide ? 1 : zoomLevel
-
   return (
     <div className="fixed inset-0 bg-black z-50 flex flex-col overflow-hidden">
       <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
@@ -183,7 +123,8 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
             muted
             className="absolute inset-0 w-full h-full object-cover"
             style={{ 
-              transform: "scale(" + (facingMode === "user" ? -displayScale : displayScale) + ", " + displayScale + ")"
+              // 에디터 색상 오류를 방지하기 위해 백틱 대신 문자열 덧셈 사용
+              transform: "scale(" + (facingMode === "user" ? -zoomLevel : zoomLevel) + ", " + zoomLevel + ")"
             }}
           />
         )}
