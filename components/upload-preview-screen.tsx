@@ -54,25 +54,38 @@ export function UploadPreviewScreen({
 
       if (typeof window === "undefined") return
 
+      // 🚨 [iOS 픽스 1] 모바일 렌더링 시 너비가 0이 되어 무한대(Infinity) 크기가 되는 것을 방지
+      const safeClientWidth = Math.max(1, container.clientWidth)
+      const safeClientHeight = Math.max(1, container.clientHeight)
+
       const img = new globalThis.Image()
-      img.crossOrigin = "anonymous"
-      img.src = capturedImage
+      
+      // TypeScript 에러 방지: 명시적 string 체크
+      if (typeof capturedImage === "string" && capturedImage.startsWith("http")) {
+        img.crossOrigin = "anonymous"
+      }
+      
+      // 🚨 [iOS 픽스 2] onload 이벤트를 먼저 등록한 후 마지막에 src를 주입해야 아이폰에서 멈추지 않습니다.
       await new Promise((resolve, reject) => {
         img.onload = resolve
-        img.onerror = reject
+        img.onerror = () => reject(new Error("Image load failed on mobile"))
+        img.src = capturedImage as string
       })
 
-      const { clientWidth, clientHeight } = container
       const outWidth = img.width
-      const outHeight = img.width * (clientHeight / clientWidth)
+      const outHeight = img.width * (safeClientHeight / safeClientWidth)
+
+      // 캔버스 크기가 비정상적일 경우 안전하게 차단
+      if (!isFinite(outHeight) || outHeight <= 0) {
+         throw new Error("Invalid canvas dimensions")
+      }
 
       const canvas = document.createElement("canvas")
       canvas.width = outWidth
       canvas.height = outHeight
       const ctx = canvas.getContext("2d")
       if (!ctx) {
-        onUpload(questionText, capturedImage)
-        return
+        throw new Error("Failed to get main canvas context")
       }
 
       const scale = Math.max(outWidth / img.width, outHeight / img.height)
@@ -86,7 +99,7 @@ export function UploadPreviewScreen({
 
       // 2. 모자이크(블러) 처리 로직 진행
       if (strokes.length > 0 || currentStroke.length > 0) {
-        const strokeScale = outWidth / clientWidth
+        const strokeScale = outWidth / safeClientWidth
         const allStrokes = currentStroke.length > 0 ? [...strokes, currentStroke] : strokes
 
         const blurCanvas = document.createElement("canvas")
@@ -97,6 +110,8 @@ export function UploadPreviewScreen({
         if (blurCtx) {
           blurCtx.filter = `blur(${16 * strokeScale}px)`
           blurCtx.drawImage(img, sx, sy, sw, sh, 0, 0, outWidth, outHeight)
+          // 🚨 [iOS 픽스 3] 아이폰 Safari 크래시를 막기 위해 필터 사용 직후 무조건 초기화
+          blurCtx.filter = "none" 
 
           const maskCanvas = document.createElement("canvas")
           maskCanvas.width = outWidth
@@ -126,6 +141,8 @@ export function UploadPreviewScreen({
                 maskCtx.stroke()
               }
             })
+            // 🚨 마스크 필터도 동일하게 초기화
+            maskCtx.filter = "none"
 
             blurCtx.globalCompositeOperation = "destination-in"
             blurCtx.drawImage(maskCanvas, 0, 0)
@@ -136,45 +153,42 @@ export function UploadPreviewScreen({
         }
       }
 
-      // ✍️ 3. [핵심 수정] 입력된 텍스트를 이미지 파일 위에 영구적으로 그리기
+      // 3. 입력된 텍스트 그리기
       if (questionText.trim().length > 0) {
-        const textScale = outWidth / clientWidth
+        const textScale = outWidth / safeClientWidth
         
-        // 폰트 스타일 설정 (모바일 브라우저 기준 크기 비례 계산)
         const fontSize = Math.round(30 * textScale) 
         ctx.font = `bold ${fontSize}px sans-serif`
         ctx.fillStyle = "white"
         ctx.textAlign = "left"
         ctx.textBaseline = "top"
 
-        // 글자 그림자 효과 주기 (텍스트 가독성 확보)
         ctx.shadowColor = "rgba(0, 0, 0, 0.6)"
         ctx.shadowBlur = 12 * textScale
         ctx.shadowOffsetX = 0
         ctx.shadowOffsetY = 4 * textScale
 
-        // 패딩 값 계산 후 텍스트 그리기 (자동 줄바꿈 처리)
         const padding = 24 * textScale
         const maxWidth = outWidth - (padding * 2)
-        const words = questionText.split("\n") // 엔터 친 부분 분리
+        const words = questionText.split("\n")
         let currentY = padding
 
         words.forEach(line => {
-          // 화면 너비를 넘어갈 경우를 대비한 안전 가이드라인 라인 렌더링
           ctx.fillText(line, padding, currentY, maxWidth)
-          currentY += fontSize * 1.3 // 행간 간격 조절
+          currentY += fontSize * 1.3 
         })
 
-        // 그림자 효과 초기화 (다음 레이어 영향 방지)
+        // 🚨 텍스트 그림자 효과도 다음 프로세스를 위해 초기화
         ctx.shadowBlur = 0
         ctx.shadowOffsetX = 0
         ctx.shadowOffsetY = 0
       }
 
-      const mergedImageData = canvas.toDataURL("image/jpeg", 0.9)
+      // 아이폰의 메모리 부담을 덜어주기 위해 이미지 압축률을 0.9 -> 0.85로 미세 조정 (화질 차이는 거의 없습니다)
+      const mergedImageData = canvas.toDataURL("image/jpeg", 0.85)
       onUpload(questionText, mergedImageData)
     } catch (e) {
-      console.error(e)
+      console.error("아이폰 캔버스 합성 중 에러 발생:", e)
       onUpload(questionText, capturedImage)
     } finally {
       setIsUploading(false)
