@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react"
 import { X, Type, Droplet } from "lucide-react"
-import Image from "next/image"
 
 interface UploadPreviewScreenProps {
   onClose: () => void
@@ -54,38 +53,27 @@ export function UploadPreviewScreen({
 
       if (typeof window === "undefined") return
 
-      // 🚨 [iOS 픽스 1] 모바일 렌더링 시 너비가 0이 되어 무한대(Infinity) 크기가 되는 것을 방지
-      const safeClientWidth = Math.max(1, container.clientWidth)
-      const safeClientHeight = Math.max(1, container.clientHeight)
-
-      const img = new globalThis.Image()
+      // 브라우저 표준 Image 객체를 사용하여 안전하게 렌더링을 기다립니다.
+      const img = new window.Image()
+      img.crossOrigin = "anonymous"
       
-      // TypeScript 에러 방지: 명시적 string 체크
-      if (typeof capturedImage === "string" && capturedImage.startsWith("http")) {
-        img.crossOrigin = "anonymous"
-      }
-      
-      // 🚨 [iOS 픽스 2] onload 이벤트를 먼저 등록한 후 마지막에 src를 주입해야 아이폰에서 멈추지 않습니다.
       await new Promise((resolve, reject) => {
         img.onload = resolve
-        img.onerror = () => reject(new Error("Image load failed on mobile"))
-        img.src = capturedImage as string
+        img.onerror = reject
+        img.src = capturedImage
       })
 
+      const { clientWidth, clientHeight } = container
       const outWidth = img.width
-      const outHeight = img.width * (safeClientHeight / safeClientWidth)
-
-      // 캔버스 크기가 비정상적일 경우 안전하게 차단
-      if (!isFinite(outHeight) || outHeight <= 0) {
-         throw new Error("Invalid canvas dimensions")
-      }
+      const outHeight = img.width * (clientHeight / clientWidth)
 
       const canvas = document.createElement("canvas")
       canvas.width = outWidth
       canvas.height = outHeight
       const ctx = canvas.getContext("2d")
       if (!ctx) {
-        throw new Error("Failed to get main canvas context")
+        onUpload(questionText, capturedImage)
+        return
       }
 
       const scale = Math.max(outWidth / img.width, outHeight / img.height)
@@ -97,9 +85,9 @@ export function UploadPreviewScreen({
       // 1. 기본 원본 이미지 그리기
       ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outWidth, outHeight)
 
-      // 2. 모자이크(블러) 처리 로직 진행
+      // 2. 모자이크 처리 (모바일 브라우저 버그 수정)
       if (strokes.length > 0 || currentStroke.length > 0) {
-        const strokeScale = outWidth / safeClientWidth
+        const strokeScale = outWidth / clientWidth
         const allStrokes = currentStroke.length > 0 ? [...strokes, currentStroke] : strokes
 
         const blurCanvas = document.createElement("canvas")
@@ -108,10 +96,11 @@ export function UploadPreviewScreen({
         const blurCtx = blurCanvas.getContext("2d")
 
         if (blurCtx) {
+          // 이미지를 먼저 흐리게 만듭니다
           blurCtx.filter = `blur(${16 * strokeScale}px)`
           blurCtx.drawImage(img, sx, sy, sw, sh, 0, 0, outWidth, outHeight)
-          // 🚨 [iOS 픽스 3] 아이폰 Safari 크래시를 막기 위해 필터 사용 직후 무조건 초기화
-          blurCtx.filter = "none" 
+          
+          blurCtx.filter = "none"
 
           const maskCanvas = document.createElement("canvas")
           maskCanvas.width = outWidth
@@ -122,9 +111,11 @@ export function UploadPreviewScreen({
             maskCtx.strokeStyle = "white"
             maskCtx.fillStyle = "white"
             maskCtx.lineWidth = 50 * strokeScale
-            maskCtx.lineCap = "square"
+            maskCtx.lineCap = "round"
             maskCtx.lineJoin = "round"
-            maskCtx.filter = `blur(${6 * strokeScale}px)`
+            
+            maskCtx.shadowColor = "white"
+            maskCtx.shadowBlur = 10 * strokeScale
 
             allStrokes.forEach(stroke => {
               if (stroke.length === 0) return
@@ -141,8 +132,6 @@ export function UploadPreviewScreen({
                 maskCtx.stroke()
               }
             })
-            // 🚨 마스크 필터도 동일하게 초기화
-            maskCtx.filter = "none"
 
             blurCtx.globalCompositeOperation = "destination-in"
             blurCtx.drawImage(maskCanvas, 0, 0)
@@ -153,10 +142,9 @@ export function UploadPreviewScreen({
         }
       }
 
-      // 3. 입력된 텍스트 그리기
+      // 3. 텍스트 병합
       if (questionText.trim().length > 0) {
-        const textScale = outWidth / safeClientWidth
-        
+        const textScale = outWidth / clientWidth
         const fontSize = Math.round(30 * textScale) 
         ctx.font = `bold ${fontSize}px sans-serif`
         ctx.fillStyle = "white"
@@ -178,17 +166,15 @@ export function UploadPreviewScreen({
           currentY += fontSize * 1.3 
         })
 
-        // 🚨 텍스트 그림자 효과도 다음 프로세스를 위해 초기화
         ctx.shadowBlur = 0
         ctx.shadowOffsetX = 0
         ctx.shadowOffsetY = 0
       }
 
-      // 아이폰의 메모리 부담을 덜어주기 위해 이미지 압축률을 0.9 -> 0.85로 미세 조정 (화질 차이는 거의 없습니다)
-      const mergedImageData = canvas.toDataURL("image/jpeg", 0.85)
+      const mergedImageData = canvas.toDataURL("image/jpeg", 0.9)
       onUpload(questionText, mergedImageData)
     } catch (e) {
-      console.error("아이폰 캔버스 합성 중 에러 발생:", e)
+      console.error(e)
       onUpload(questionText, capturedImage)
     } finally {
       setIsUploading(false)
@@ -249,12 +235,10 @@ export function UploadPreviewScreen({
             }}
           >
             {capturedImage && (
-              <Image
+              <img
                 src={capturedImage}
                 alt="Captured photo"
-                fill
-                className="object-cover pointer-events-none"
-                unoptimized
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none"
               />
             )}
 
@@ -281,7 +265,7 @@ export function UploadPreviewScreen({
                           d={d}
                           stroke="white"
                           strokeWidth="50"
-                          strokeLinecap="square"
+                          strokeLinecap="round"
                           strokeLinejoin="round"
                           fill="none"
                           filter="url(#maskSoftEdge)"
@@ -317,11 +301,21 @@ export function UploadPreviewScreen({
             )}
           </div>
 
-          <div className="absolute -right-12 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-40">
-            <button onClick={handleTextIconClick} className={`w-10 h-10 rounded-full flex items-center justify-center ${isTextMode ? "bg-white text-black" : "bg-white/20 text-white"}`}>
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-40">
+            <button 
+              onClick={handleTextIconClick} 
+              className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-colors ${
+                isTextMode ? "bg-white text-black" : "bg-black/40 backdrop-blur-md text-white border border-white/20"
+              }`}
+            >
               <Type className="w-5 h-5" />
             </button>
-            <button onClick={handleMosaicIconClick} className={`w-10 h-10 rounded-full flex items-center justify-center ${isMosaicMode ? "bg-white text-black" : "bg-white/20 text-white"}`}>
+            <button 
+              onClick={handleMosaicIconClick} 
+              className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-colors ${
+                isMosaicMode ? "bg-white text-black" : "bg-black/40 backdrop-blur-md text-white border border-white/20"
+              }`}
+            >
               <Droplet className="w-5 h-5" />
             </button>
           </div>
@@ -329,7 +323,7 @@ export function UploadPreviewScreen({
       </div>
 
       <div className="flex justify-center pb-12 z-50">
-        <button onClick={handleUploadClick} disabled={isUploading} className="px-8 py-3 bg-[#3a3a3a] rounded-full text-white text-sm font-medium disabled:opacity-50">
+        <button onClick={handleUploadClick} disabled={isUploading} className="px-8 py-3 bg-[#3a3a3a] rounded-full text-white text-sm font-medium disabled:opacity-50 shadow-lg hover:bg-[#2a2a2a] transition-colors">
           업로드
         </button>
       </div>
