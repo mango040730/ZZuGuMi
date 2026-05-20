@@ -95,12 +95,12 @@ export default function Home() {
   return (
     <>
       <main 
-        className={`relative flex flex-col h-dvh w-full max-w-[390px] mx-auto bg-[#f3f3f1] overflow-hidden transition-opacity duration-300 ${
+        className={`relative min-h-screen w-full max-w-md mx-auto bg-[#f3f3f1] overflow-hidden transition-opacity duration-300 ${
           currentScreen !== "home" ? "opacity-0" : "opacity-100"
         }`}
       >
         <Header />
-        <div className="relative flex-1 overflow-hidden w-full">
+        <div className="relative h-[calc(100vh-80px)]">
           <FloatingCards userPosts={posts} />
         </div>
         <CameraButton onClick={handleCameraOpen} />
