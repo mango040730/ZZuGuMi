@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react"
 import { Header } from "@/components/home/header"
 import { FloatingCards, type Post } from "@/components/home/floating-cards"
-import { CameraButton } from "@/components/home/camera-button"
-import { CameraScreen } from "@/components/camera/camera-screen"
+import { CameraButton } from "@/components/camera/camera-button"
+import { CameraScreen } from "@/components/home/camera-screen"
 import { UploadPreviewScreen } from "@/components/upload-preview-screen"
 
 type Screen = "home" | "camera" | "preview"

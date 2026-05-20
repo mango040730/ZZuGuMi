@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { X, Type, Droplet } from "lucide-react"
+import Image from "next/image"
 
 interface UploadPreviewScreenProps {
   onClose: () => void
@@ -53,14 +54,12 @@ export function UploadPreviewScreen({
 
       if (typeof window === "undefined") return
 
-      // 모바일 기기에서도 안전하게 캔버스 렌더링을 기다립니다.
       const img = new globalThis.Image()
       img.crossOrigin = "anonymous"
-      
+      img.src = capturedImage
       await new Promise((resolve, reject) => {
         img.onload = resolve
         img.onerror = reject
-        img.src = capturedImage
       })
 
       const { clientWidth, clientHeight } = container
@@ -85,7 +84,7 @@ export function UploadPreviewScreen({
       // 1. 기본 원본 이미지 그리기
       ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outWidth, outHeight)
 
-      // 2. 모자이크 처리 (모바일 브라우저 버그 수정)
+      // 2. 모자이크(블러) 처리 로직 진행
       if (strokes.length > 0 || currentStroke.length > 0) {
         const strokeScale = outWidth / clientWidth
         const allStrokes = currentStroke.length > 0 ? [...strokes, currentStroke] : strokes
@@ -96,12 +95,8 @@ export function UploadPreviewScreen({
         const blurCtx = blurCanvas.getContext("2d")
 
         if (blurCtx) {
-          // 이미지를 먼저 흐리게 만듭니다
           blurCtx.filter = `blur(${16 * strokeScale}px)`
           blurCtx.drawImage(img, sx, sy, sw, sh, 0, 0, outWidth, outHeight)
-          
-          // ✨ 핵심 수정 1: 마스크를 씌우기 전 필터를 반드시 'none'으로 초기화해야 날아가지 않습니다.
-          blurCtx.filter = "none"
 
           const maskCanvas = document.createElement("canvas")
           maskCanvas.width = outWidth
@@ -112,12 +107,9 @@ export function UploadPreviewScreen({
             maskCtx.strokeStyle = "white"
             maskCtx.fillStyle = "white"
             maskCtx.lineWidth = 50 * strokeScale
-            maskCtx.lineCap = "round" // 붓 터치를 둥글고 부드럽게 개선
+            maskCtx.lineCap = "square"
             maskCtx.lineJoin = "round"
-            
-            // ✨ 핵심 수정 2: 호환성 문제가 있는 filter 대신 그림자(shadow)로 경계선을 부드럽게 처리
-            maskCtx.shadowColor = "white"
-            maskCtx.shadowBlur = 10 * strokeScale
+            maskCtx.filter = `blur(${6 * strokeScale}px)`
 
             allStrokes.forEach(stroke => {
               if (stroke.length === 0) return
@@ -135,41 +127,45 @@ export function UploadPreviewScreen({
               }
             })
 
-            // 흐려진 이미지 위에 마스크 모양만 잘라냅니다.
             blurCtx.globalCompositeOperation = "destination-in"
             blurCtx.drawImage(maskCanvas, 0, 0)
 
-            // 최종본 캔버스 위에 합성합니다.
             ctx.globalCompositeOperation = "source-over"
             ctx.drawImage(blurCanvas, 0, 0)
           }
         }
       }
 
-      // 3. 텍스트 병합
+      // ✍️ 3. [핵심 수정] 입력된 텍스트를 이미지 파일 위에 영구적으로 그리기
       if (questionText.trim().length > 0) {
         const textScale = outWidth / clientWidth
+        
+        // 폰트 스타일 설정 (모바일 브라우저 기준 크기 비례 계산)
         const fontSize = Math.round(30 * textScale) 
         ctx.font = `bold ${fontSize}px sans-serif`
         ctx.fillStyle = "white"
         ctx.textAlign = "left"
         ctx.textBaseline = "top"
 
+        // 글자 그림자 효과 주기 (텍스트 가독성 확보)
         ctx.shadowColor = "rgba(0, 0, 0, 0.6)"
         ctx.shadowBlur = 12 * textScale
         ctx.shadowOffsetX = 0
         ctx.shadowOffsetY = 4 * textScale
 
+        // 패딩 값 계산 후 텍스트 그리기 (자동 줄바꿈 처리)
         const padding = 24 * textScale
         const maxWidth = outWidth - (padding * 2)
-        const words = questionText.split("\n")
+        const words = questionText.split("\n") // 엔터 친 부분 분리
         let currentY = padding
 
         words.forEach(line => {
+          // 화면 너비를 넘어갈 경우를 대비한 안전 가이드라인 라인 렌더링
           ctx.fillText(line, padding, currentY, maxWidth)
-          currentY += fontSize * 1.3 
+          currentY += fontSize * 1.3 // 행간 간격 조절
         })
 
+        // 그림자 효과 초기화 (다음 레이어 영향 방지)
         ctx.shadowBlur = 0
         ctx.shadowOffsetX = 0
         ctx.shadowOffsetY = 0
@@ -239,10 +235,12 @@ export function UploadPreviewScreen({
             }}
           >
             {capturedImage && (
-              <img
+              <Image
                 src={capturedImage}
                 alt="Captured photo"
-                className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                fill
+                className="object-cover pointer-events-none"
+                unoptimized
               />
             )}
 
@@ -269,7 +267,7 @@ export function UploadPreviewScreen({
                           d={d}
                           stroke="white"
                           strokeWidth="50"
-                          strokeLinecap="round"
+                          strokeLinecap="square"
                           strokeLinejoin="round"
                           fill="none"
                           filter="url(#maskSoftEdge)"
