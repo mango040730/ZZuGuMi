@@ -60,7 +60,7 @@ export function UploadPreviewScreen({
       await new Promise((resolve, reject) => {
         img.onload = resolve
         img.onerror = reject
-        img.src = capturedImage // src 할당을 이벤트 리스너 등록 후로 이동
+        img.src = capturedImage
       })
 
       const { clientWidth, clientHeight } = container
@@ -85,7 +85,7 @@ export function UploadPreviewScreen({
       // 1. 기본 원본 이미지 그리기
       ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outWidth, outHeight)
 
-      // 2. 모자이크 처리 최적화 (SVG 마스크 대신 HTML5 Canvas 순수 병합 방식으로 변경)
+      // 2. 모자이크 처리 (모바일 브라우저 버그 수정)
       if (strokes.length > 0 || currentStroke.length > 0) {
         const strokeScale = outWidth / clientWidth
         const allStrokes = currentStroke.length > 0 ? [...strokes, currentStroke] : strokes
@@ -96,8 +96,12 @@ export function UploadPreviewScreen({
         const blurCtx = blurCanvas.getContext("2d")
 
         if (blurCtx) {
+          // 이미지를 먼저 흐리게 만듭니다
           blurCtx.filter = `blur(${16 * strokeScale}px)`
           blurCtx.drawImage(img, sx, sy, sw, sh, 0, 0, outWidth, outHeight)
+          
+          // ✨ 핵심 수정 1: 마스크를 씌우기 전 필터를 반드시 'none'으로 초기화해야 날아가지 않습니다.
+          blurCtx.filter = "none"
 
           const maskCanvas = document.createElement("canvas")
           maskCanvas.width = outWidth
@@ -108,9 +112,12 @@ export function UploadPreviewScreen({
             maskCtx.strokeStyle = "white"
             maskCtx.fillStyle = "white"
             maskCtx.lineWidth = 50 * strokeScale
-            maskCtx.lineCap = "square"
+            maskCtx.lineCap = "round" // 붓 터치를 둥글고 부드럽게 개선
             maskCtx.lineJoin = "round"
-            maskCtx.filter = `blur(${6 * strokeScale}px)`
+            
+            // ✨ 핵심 수정 2: 호환성 문제가 있는 filter 대신 그림자(shadow)로 경계선을 부드럽게 처리
+            maskCtx.shadowColor = "white"
+            maskCtx.shadowBlur = 10 * strokeScale
 
             allStrokes.forEach(stroke => {
               if (stroke.length === 0) return
@@ -128,16 +135,18 @@ export function UploadPreviewScreen({
               }
             })
 
+            // 흐려진 이미지 위에 마스크 모양만 잘라냅니다.
             blurCtx.globalCompositeOperation = "destination-in"
             blurCtx.drawImage(maskCanvas, 0, 0)
 
+            // 최종본 캔버스 위에 합성합니다.
             ctx.globalCompositeOperation = "source-over"
             ctx.drawImage(blurCanvas, 0, 0)
           }
         }
       }
 
-      // 3. 텍스트 병합 최적화
+      // 3. 텍스트 병합
       if (questionText.trim().length > 0) {
         const textScale = outWidth / clientWidth
         const fontSize = Math.round(30 * textScale) 
@@ -166,7 +175,6 @@ export function UploadPreviewScreen({
         ctx.shadowOffsetY = 0
       }
 
-      // JPEG로 렌더링 품질 0.9 설정하여 압축 인코딩
       const mergedImageData = canvas.toDataURL("image/jpeg", 0.9)
       onUpload(questionText, mergedImageData)
     } catch (e) {
@@ -261,7 +269,7 @@ export function UploadPreviewScreen({
                           d={d}
                           stroke="white"
                           strokeWidth="50"
-                          strokeLinecap="square"
+                          strokeLinecap="round"
                           strokeLinejoin="round"
                           fill="none"
                           filter="url(#maskSoftEdge)"
