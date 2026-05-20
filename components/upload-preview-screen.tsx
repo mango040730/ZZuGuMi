@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react"
 import { X, Type, Droplet } from "lucide-react"
-import Image from "next/image"
 
 interface UploadPreviewScreenProps {
   onClose: () => void
@@ -54,12 +53,14 @@ export function UploadPreviewScreen({
 
       if (typeof window === "undefined") return
 
+      // 모바일 기기에서도 안전하게 캔버스 렌더링을 기다립니다.
       const img = new globalThis.Image()
       img.crossOrigin = "anonymous"
-      img.src = capturedImage
+      
       await new Promise((resolve, reject) => {
         img.onload = resolve
         img.onerror = reject
+        img.src = capturedImage // src 할당을 이벤트 리스너 등록 후로 이동
       })
 
       const { clientWidth, clientHeight } = container
@@ -84,7 +85,7 @@ export function UploadPreviewScreen({
       // 1. 기본 원본 이미지 그리기
       ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outWidth, outHeight)
 
-      // 2. 모자이크(블러) 처리 로직 진행
+      // 2. 모자이크 처리 최적화 (SVG 마스크 대신 HTML5 Canvas 순수 병합 방식으로 변경)
       if (strokes.length > 0 || currentStroke.length > 0) {
         const strokeScale = outWidth / clientWidth
         const allStrokes = currentStroke.length > 0 ? [...strokes, currentStroke] : strokes
@@ -136,41 +137,36 @@ export function UploadPreviewScreen({
         }
       }
 
-      // ✍️ 3. [핵심 수정] 입력된 텍스트를 이미지 파일 위에 영구적으로 그리기
+      // 3. 텍스트 병합 최적화
       if (questionText.trim().length > 0) {
         const textScale = outWidth / clientWidth
-        
-        // 폰트 스타일 설정 (모바일 브라우저 기준 크기 비례 계산)
         const fontSize = Math.round(30 * textScale) 
         ctx.font = `bold ${fontSize}px sans-serif`
         ctx.fillStyle = "white"
         ctx.textAlign = "left"
         ctx.textBaseline = "top"
 
-        // 글자 그림자 효과 주기 (텍스트 가독성 확보)
         ctx.shadowColor = "rgba(0, 0, 0, 0.6)"
         ctx.shadowBlur = 12 * textScale
         ctx.shadowOffsetX = 0
         ctx.shadowOffsetY = 4 * textScale
 
-        // 패딩 값 계산 후 텍스트 그리기 (자동 줄바꿈 처리)
         const padding = 24 * textScale
         const maxWidth = outWidth - (padding * 2)
-        const words = questionText.split("\n") // 엔터 친 부분 분리
+        const words = questionText.split("\n")
         let currentY = padding
 
         words.forEach(line => {
-          // 화면 너비를 넘어갈 경우를 대비한 안전 가이드라인 라인 렌더링
           ctx.fillText(line, padding, currentY, maxWidth)
-          currentY += fontSize * 1.3 // 행간 간격 조절
+          currentY += fontSize * 1.3 
         })
 
-        // 그림자 효과 초기화 (다음 레이어 영향 방지)
         ctx.shadowBlur = 0
         ctx.shadowOffsetX = 0
         ctx.shadowOffsetY = 0
       }
 
+      // JPEG로 렌더링 품질 0.9 설정하여 압축 인코딩
       const mergedImageData = canvas.toDataURL("image/jpeg", 0.9)
       onUpload(questionText, mergedImageData)
     } catch (e) {
@@ -235,12 +231,10 @@ export function UploadPreviewScreen({
             }}
           >
             {capturedImage && (
-              <Image
+              <img
                 src={capturedImage}
                 alt="Captured photo"
-                fill
-                className="object-cover pointer-events-none"
-                unoptimized
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none"
               />
             )}
 
