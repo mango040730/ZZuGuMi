@@ -85,7 +85,7 @@ export function UploadPreviewScreen({
       // 1. 기본 원본 이미지 그리기
       ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outWidth, outHeight)
 
-      // 2. 모자이크 처리 (모바일 브라우저 렌더링 증발 완벽 우회 버전)
+      // 2. 모자이크 처리 (부드러운 가우시안 블러 복구 및 브라우저 버그 완벽 우회)
       if (strokes.length > 0 || currentStroke.length > 0) {
         const strokeScale = outWidth / clientWidth
         const allStrokes = currentStroke.length > 0 ? [...strokes, currentStroke] : strokes
@@ -96,32 +96,26 @@ export function UploadPreviewScreen({
         const blurCtx = blurCanvas.getContext("2d")
 
         if (blurCtx) {
-          // 💡 핵심 해결책 1: filter="blur()" 속성이 모바일 환경에서 무시되거나 날아가는 현상을 막기 위해
-          // 원본 이미지를 아주 작게(1/20 크기) 축소했다가 다시 확대하여 물리적으로 화질을 뭉개는 블러 효과를 생성합니다.
-          const tinyCanvas = document.createElement("canvas")
-          tinyCanvas.width = Math.max(1, Math.floor(outWidth * 0.05))
-          tinyCanvas.height = Math.max(1, Math.floor(outHeight * 0.05))
-          const tinyCtx = tinyCanvas.getContext("2d")
+          // 💡 픽셀화 대신 원본 그대로 아주 부드러운 가우시안 블러(Gaussian Blur) 필터를 적용합니다.
+          blurCtx.filter = `blur(${16 * strokeScale}px)`
+          blurCtx.drawImage(img, sx, sy, sw, sh, 0, 0, outWidth, outHeight)
           
-          if (tinyCtx) {
-            tinyCtx.drawImage(img, sx, sy, sw, sh, 0, 0, tinyCanvas.width, tinyCanvas.height)
-            
-            blurCtx.imageSmoothingEnabled = true // 축소된 이미지를 다시 확대할 때 픽셀을 부드럽게 뭉개줍니다.
-            blurCtx.drawImage(tinyCanvas, 0, 0, tinyCanvas.width, tinyCanvas.height, 0, 0, outWidth, outHeight)
-          }
-
           const maskCanvas = document.createElement("canvas")
           maskCanvas.width = outWidth
           maskCanvas.height = outHeight
           const maskCtx = maskCanvas.getContext("2d")
 
           if (maskCtx) {
-            // 💡 핵심 해결책 2: 버그를 유발하는 shadowBlur나 filter를 전부 빼고, 가장 안전한 순수 선(Stroke)으로만 마스크를 그립니다.
+            // 브러시 마스크를 별도 캔버스에 깔끔하게 그립니다.
             maskCtx.strokeStyle = "black"
             maskCtx.fillStyle = "black"
             maskCtx.lineWidth = 50 * strokeScale
             maskCtx.lineCap = "round"
             maskCtx.lineJoin = "round"
+            
+            // 경계선을 부드럽게 처리
+            maskCtx.shadowColor = "black"
+            maskCtx.shadowBlur = 8 * strokeScale
 
             allStrokes.forEach(stroke => {
               if (stroke.length === 0) return
@@ -139,11 +133,15 @@ export function UploadPreviewScreen({
               }
             })
 
-            // 사용자가 브러시를 칠한 마스크 영역(maskCanvas)에만 블러 처리된 이미지(blurCanvas)를 입혀줍니다.
+            // 💡 핵심: 합성하기 전, 그림자 효과를 초기화해야 모바일 사파리/크롬에서 필터가 날아가는 버그를 막을 수 있습니다.
+            maskCtx.shadowColor = "transparent"
+            maskCtx.shadowBlur = 0
+
+            // 마스크 캔버스 위에 블러 캔버스를 덮어씌워서 칠한 곳(source-in)만 남깁니다.
             maskCtx.globalCompositeOperation = "source-in"
             maskCtx.drawImage(blurCanvas, 0, 0)
 
-            // 완성된 모자이크를 최종 캔버스 위에 올립니다.
+            // 완성된 부드러운 모자이크 조각을 최종 캔버스 위에 올립니다.
             ctx.globalCompositeOperation = "source-over"
             ctx.drawImage(maskCanvas, 0, 0)
           }
