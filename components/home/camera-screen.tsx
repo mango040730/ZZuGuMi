@@ -1,6 +1,6 @@
 "use client"
 
-import { X, RefreshCw, Camera } from "lucide-react" // Camera 추가
+import { X, RefreshCw, Camera } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 
 interface CameraScreenProps {
@@ -216,25 +216,14 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
 
           <div className="pb-12 pt-6 flex flex-col items-center justify-center bg-gradient-to-t from-black/50 to-transparent">
             <div className="relative flex items-center justify-center w-full max-w-sm px-8">
-              {/* 수정된 사진 찍기 버튼: 홈 화면의 카메라 버튼 디자인 적용 */}
+              
               <button
                 onClick={handleCapture}
                 disabled={!isReady}
-                // camera-button.tsx의 디자인 요소를 차용하여 스타일 적용
-                className="flex items-center gap-3 p-4 bg-zinc-50 rounded-2xl border border-zinc-100 active:scale-[0.98] transition-all duration-100 disabled:opacity-50 shadow-lg z-10"
+                className="w-[72px] h-[72px] bg-[#FF6200] rounded-full flex items-center justify-center shadow-[0_8px_24px_rgba(0,0,0,0.12)] disabled:opacity-50 transition-transform active:scale-95 z-10"
                 aria-label="Take photo"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 flex items-center justify-center bg-zinc-100 rounded-full">
-                    <Camera className="w-5 h-5 text-zinc-600" strokeWidth={1.5} />
-                  </div>
-                  <div className="flex flex-col items-start">
-                    <span className="text-zinc-900 font-medium">사진 찍기</span>
-                    <span className="text-zinc-500 text-xs text-left">
-                      주변에 있는 다양한 물건들을 카메라로 촬영해보세요
-                    </span>
-                  </div>
-                </div>
+                <Camera className="w-12 h-12 text-white" strokeWidth={2} />
               </button>
 
               <button
