@@ -326,13 +326,13 @@ export function UploadPreviewScreen({
         </div>
       </div>
 
-      {/* 💡 버튼 크기를 크게 조정 (px-12 py-4 -> px-16 py-4 등) */}
-      <div className="flex justify-center pt-4 pb-8 z-50 shrink-0">
+      {/* 💡 하단 버튼 영역: 사진 너비(max-w-sm)와 동일하게 맞추고 w-full 적용 */}
+      <div className="flex justify-center pt-4 pb-8 px-4 z-50 shrink-0">
         {step === "text" ? (
           <button 
             onClick={handleNextStep} 
             disabled={questionText.trim().length === 0}
-            className="px-16 py-4 bg-[#3a3a3a] rounded-full text-white text-base font-bold disabled:opacity-50 shadow-lg hover:bg-[#2a2a2a] transition-colors"
+            className="w-full max-w-[calc(100vw-32px)] py-4 bg-[#FF6200] rounded-full text-white text-base font-bold disabled:opacity-50 shadow-lg hover:bg-[#2a2a2a] transition-colors"
           >
             다음
           </button>
@@ -340,7 +340,7 @@ export function UploadPreviewScreen({
           <button 
             onClick={handleUploadClick} 
             disabled={isUploading} 
-            className="px-16 py-4 bg-[#FF6200] rounded-full text-white text-base font-bold disabled:opacity-50 shadow-lg hover:bg-[#e55800] transition-colors"
+            className="w-full max-w-[calc(100vw-32px)] py-4 bg-[#FF6200] rounded-full text-white text-base font-bold disabled:opacity-50 shadow-lg hover:bg-[#e55800] transition-colors"
           >
             업로드
           </button>
