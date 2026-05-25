@@ -1,24 +1,67 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { X, Type } from "lucide-react"
+import { X, Type, Plus } from "lucide-react"
 
-// 투표 작성 모달 컴포넌트
-const PollModal = ({ onClose }: { onClose: () => void }) => (
-  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
-    <div className="bg-zinc-900 border border-white/20 p-6 rounded-3xl w-full max-w-sm text-white shadow-2xl">
-      <h2 className="text-xl font-bold mb-4">투표 작성</h2>
-      <p className="mb-4 text-zinc-400">투표 내용을 입력하세요.</p>
-      {/* 여기에 투표 입력 폼 구현 가능 */}
-      <button 
-        onClick={onClose} 
-        className="mt-4 w-full py-4 bg-[#FF6200] rounded-full font-bold"
-      >
-        완료
-      </button>
+// 투표 작성 모달 컴포넌트 (디자인 개선 버전)
+const PollModal = ({ onClose }: { onClose: () => void }) => {
+  const [options, setOptions] = useState<string[]>(["", ""]);
+
+  const addOption = () => {
+    if (options.length < 3) setOptions([...options, ""]);
+  };
+
+  const handleOptionChange = (index: number, value: string) => {
+    const newOptions = [...options];
+    newOptions[index] = value;
+    setOptions(newOptions);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-6 backdrop-blur-sm">
+      <div className="bg-white rounded-[40px] w-full max-w-[340px] p-8 flex flex-col items-center shadow-2xl">
+        <h2 className="text-[22px] font-bold text-[#1a1a1a] mb-2">무엇을 투표하시겠어요?</h2>
+        <p className="text-[#999999] text-[14px] mb-8">최대 3개까지 선택지를 작성할 수 있습니다</p>
+        
+        <div className="w-full flex flex-col gap-3 mb-6">
+          {options.map((option, index) => (
+            <input
+              key={index}
+              type="text"
+              value={option}
+              onChange={(e) => handleOptionChange(index, e.target.value)}
+              placeholder="텍스트를 입력하세요"
+              className="w-full h-[56px] border-2 border-[#FF6200] rounded-[20px] px-4 text-center text-[16px] outline-none placeholder:text-[#cccccc]"
+            />
+          ))}
+          {options.length < 3 && (
+            <button 
+              onClick={addOption} 
+              className="w-full h-[56px] border-2 border-[#cccccc] rounded-[20px] flex items-center justify-center hover:bg-gray-50 transition-colors"
+            >
+              <Plus className="text-[#cccccc] w-6 h-6" />
+            </button>
+          )}
+        </div>
+        
+        <div className="w-full flex gap-3">
+          <button 
+            onClick={onClose} 
+            className="flex-1 h-[60px] bg-[#FF6200] text-white rounded-[30px] text-[18px] font-bold"
+          >
+            등록
+          </button>
+          <button 
+            onClick={onClose} 
+            className="flex-1 h-[60px] bg-white border-2 border-[#cccccc] text-[#666666] rounded-[30px] text-[18px] font-bold"
+          >
+            취소
+          </button>
+        </div>
+      </div>
     </div>
-  </div>
-)
+  );
+};
 
 interface UploadPreviewScreenProps {
   onClose: () => void
@@ -34,7 +77,7 @@ export function UploadPreviewScreen({
   const [step, setStep] = useState<"text" | "mosaic">("text")
   const [questionText, setQuestionText] = useState("")
   const [isMosaicMode, setIsMosaicMode] = useState(false)
-  const [isPollModalOpen, setIsPollModalOpen] = useState(false) // 모달 상태 추가
+  const [isPollModalOpen, setIsPollModalOpen] = useState(false)
   const [strokes, setStrokes] = useState<{x: number, y: number}[][]>([])
   const [currentStroke, setCurrentStroke] = useState<{x: number, y: number}[]>([])
   const [isPointerDown, setIsPointerDown] = useState(false)
@@ -59,6 +102,7 @@ export function UploadPreviewScreen({
 
   const handleUploadClick = async () => {
     if (isUploading) return
+
     if (!capturedImage) {
       onUpload(questionText, capturedImage)
       return
@@ -182,6 +226,10 @@ export function UploadPreviewScreen({
           ctx.fillText(line, padding, currentY, maxWidth)
           currentY += fontSize * 1.3 
         })
+
+        ctx.shadowBlur = 0
+        ctx.shadowOffsetX = 0
+        ctx.shadowOffsetY = 0
       }
 
       const mergedImageData = canvas.toDataURL("image/jpeg", 0.9)
@@ -215,7 +263,7 @@ export function UploadPreviewScreen({
         </button>
       </div>
 
-      <div className="flex-1 w-full px-4 pb-2 min-h-0 flex justify-center items-center relative">
+      <div className="flex-1 w-full px-4 pb-2 min-h-0 flex justify-center items-center">
         <div 
           ref={containerRef}
           className={`relative h-full max-h-[75vh] aspect-[22/29] bg-zinc-900 rounded-3xl overflow-hidden shrink-0 ${
@@ -335,7 +383,6 @@ export function UploadPreviewScreen({
                 <Type className="w-5 h-5" />
               </button>
 
-              {/* 투표 아이콘 추가 */}
               <button 
                 onClick={() => setIsPollModalOpen(true)}
                 className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg bg-black/40 backdrop-blur-md text-white border border-white/20"
