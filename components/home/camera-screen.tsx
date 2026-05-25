@@ -184,7 +184,8 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
 
       <div className="relative z-10 flex flex-col h-full justify-between pointer-events-none">
         
-        <div className="p-4 flex justify-between items-center pointer-events-auto">
+        {/* 수정된 부분: justify-between -> justify-end */}
+        <div className="p-4 flex justify-end items-center pointer-events-auto">
           <button
             onClick={handleClose}
             className="w-10 h-10 flex items-center justify-center bg-black/20 rounded-full backdrop-blur-md"
