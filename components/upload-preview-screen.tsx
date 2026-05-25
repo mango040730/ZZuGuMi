@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { X, Type, Pen } from "lucide-react"
+import { X, Pen, ChevronLeft } from "lucide-react"
 
 interface UploadPreviewScreenProps {
   onClose: () => void
@@ -14,8 +14,9 @@ export function UploadPreviewScreen({
   onUpload,
   capturedImage
 }: UploadPreviewScreenProps) {
+  // 단계 관리를 위한 상태 추가: "text" (텍스트 입력) -> "mosaic" (모자이크 편집)
+  const [step, setStep] = useState<"text" | "mosaic">("text")
   const [questionText, setQuestionText] = useState("")
-  const [isTextMode, setIsTextMode] = useState(false)
   const [isMosaicMode, setIsMosaicMode] = useState(false)
   const [strokes, setStrokes] = useState<{x: number, y: number}[][]>([])
   const [currentStroke, setCurrentStroke] = useState<{x: number, y: number}[]>([])
@@ -25,14 +26,19 @@ export function UploadPreviewScreen({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const handleTextIconClick = () => {
-    setIsTextMode(prev => !prev)
-    setIsMosaicMode(false)
-  }
-
   const handleMosaicIconClick = () => {
     setIsMosaicMode(prev => !prev)
-    setIsTextMode(false)
+  }
+
+  const handleNextStep = () => {
+    if (questionText.trim().length > 0) {
+      setStep("mosaic")
+    }
+  }
+
+  const handlePrevStep = () => {
+    setStep("text")
+    setIsMosaicMode(false)
   }
 
   const handleUploadClick = async () => {
@@ -53,7 +59,6 @@ export function UploadPreviewScreen({
 
       if (typeof window === "undefined") return
 
-      // 브라우저 표준 Image 객체를 사용하여 안전하게 렌더링을 기다립니다.
       const img = new window.Image()
       img.crossOrigin = "anonymous"
       
@@ -85,7 +90,7 @@ export function UploadPreviewScreen({
       // 1. 기본 원본 이미지 그리기
       ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outWidth, outHeight)
 
-      // 2. 모자이크 처리 (부드러운 가우시안 블러 복구 및 브라우저 버그 완벽 우회)
+      // 2. 모자이크 처리
       if (strokes.length > 0 || currentStroke.length > 0) {
         const strokeScale = outWidth / clientWidth
         const allStrokes = currentStroke.length > 0 ? [...strokes, currentStroke] : strokes
@@ -96,7 +101,6 @@ export function UploadPreviewScreen({
         const blurCtx = blurCanvas.getContext("2d")
 
         if (blurCtx) {
-          // 💡 픽셀화 대신 원본 그대로 아주 부드러운 가우시안 블러(Gaussian Blur) 필터를 적용합니다.
           blurCtx.filter = `blur(${16 * strokeScale}px)`
           blurCtx.drawImage(img, sx, sy, sw, sh, 0, 0, outWidth, outHeight)
           
@@ -106,14 +110,12 @@ export function UploadPreviewScreen({
           const maskCtx = maskCanvas.getContext("2d")
 
           if (maskCtx) {
-            // 브러시 마스크를 별도 캔버스에 깔끔하게 그립니다.
             maskCtx.strokeStyle = "black"
             maskCtx.fillStyle = "black"
             maskCtx.lineWidth = 50 * strokeScale
             maskCtx.lineCap = "round"
             maskCtx.lineJoin = "round"
             
-            // 경계선을 부드럽게 처리
             maskCtx.shadowColor = "black"
             maskCtx.shadowBlur = 8 * strokeScale
 
@@ -133,15 +135,12 @@ export function UploadPreviewScreen({
               }
             })
 
-            // 💡 핵심: 합성하기 전, 그림자 효과를 초기화해야 모바일 사파리/크롬에서 필터가 날아가는 버그를 막을 수 있습니다.
             maskCtx.shadowColor = "transparent"
             maskCtx.shadowBlur = 0
 
-            // 마스크 캔버스 위에 블러 캔버스를 덮어씌워서 칠한 곳(source-in)만 남깁니다.
             maskCtx.globalCompositeOperation = "source-in"
             maskCtx.drawImage(blurCanvas, 0, 0)
 
-            // 완성된 부드러운 모자이크 조각을 최종 캔버스 위에 올립니다.
             ctx.globalCompositeOperation = "source-over"
             ctx.drawImage(maskCanvas, 0, 0)
           }
@@ -188,24 +187,30 @@ export function UploadPreviewScreen({
   }
 
   useEffect(() => {
-    if (textareaRef.current) {
+    if (step === "text" && textareaRef.current) {
       textareaRef.current.style.height = "auto"
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
     }
-  }, [questionText, isTextMode])
+  }, [questionText, step])
 
   useEffect(() => {
-    if (isTextMode && textareaRef.current) {
+    if (step === "text" && textareaRef.current) {
       textareaRef.current.focus()
     }
-  }, [isTextMode])
+  }, [step])
 
   return (
     <div className="fixed inset-0 bg-black z-50 flex flex-col">
       <div className="p-4 flex justify-between items-center z-50">
-        <button onClick={onClose} className="w-8 h-8 flex items-center justify-center">
-          <X className="w-6 h-6 text-white" strokeWidth={1.5} />
-        </button>
+        {step === "text" ? (
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center">
+            <X className="w-6 h-6 text-white" strokeWidth={1.5} />
+          </button>
+        ) : (
+          <button onClick={handlePrevStep} className="w-8 h-8 flex items-center justify-center">
+            <ChevronLeft className="w-8 h-8 text-white" strokeWidth={1.5} />
+          </button>
+        )}
       </div>
 
       <div className="flex-1 flex items-center justify-center px-4">
@@ -213,25 +218,23 @@ export function UploadPreviewScreen({
           <div 
             ref={containerRef}
             className={`relative aspect-[3/4] bg-zinc-900 rounded-3xl overflow-hidden ${
-              isMosaicMode ? "touch-none cursor-crosshair" : ""
+              step === "mosaic" && isMosaicMode ? "touch-none cursor-crosshair" : ""
             }`}
             onPointerDown={(e) => {
-              if (isMosaicMode) {
+              if (step === "mosaic" && isMosaicMode) {
                 setIsPointerDown(true)
                 const rect = e.currentTarget.getBoundingClientRect()
                 setCurrentStroke([{ x: e.clientX - rect.left, y: e.clientY - rect.top }])
-              } else if (isTextMode) {
-                setIsTextMode(false)
               }
             }}
             onPointerMove={(e) => {
-              if (isMosaicMode && isPointerDown) {
+              if (step === "mosaic" && isMosaicMode && isPointerDown) {
                 const rect = e.currentTarget.getBoundingClientRect()
                 setCurrentStroke(prev => [...prev, { x: e.clientX - rect.left, y: e.clientY - rect.top }])
               }
             }}
             onPointerUp={() => {
-              if (isMosaicMode && isPointerDown) {
+              if (step === "mosaic" && isMosaicMode && isPointerDown) {
                 setIsPointerDown(false)
                 if (currentStroke.length > 0) {
                   setStrokes(prev => [...prev, currentStroke])
@@ -287,51 +290,67 @@ export function UploadPreviewScreen({
               </svg>
             )}
             
-            {isTextMode && <div className="absolute inset-0 bg-black/40 pointer-events-none z-20" />}
+            {/* 텍스트 입력 모드일 때 배경을 어둡게 처리 */}
+            {step === "text" && <div className="absolute inset-0 bg-black/40 pointer-events-none z-20" />}
 
-            {(isTextMode || questionText.length > 0) && (
-              <div className={`absolute top-0 left-0 right-0 p-6 flex flex-col z-30 ${!isTextMode ? 'pointer-events-none' : ''}`}>
-                <textarea
-                  ref={textareaRef}
-                  value={questionText}
-                  onChange={(e) => setQuestionText(e.target.value)}
-                  placeholder={isTextMode ? "궁금한 점을 적어보세요" : ""}
-                  className="w-full bg-transparent text-white text-3xl font-bold resize-none outline-none drop-shadow-xl"
-                  rows={1}
-                />
+            {(step === "text" || questionText.length > 0) && (
+              <div className={`absolute top-0 left-0 right-0 p-6 flex flex-col z-30 ${step !== "text" ? 'pointer-events-none' : ''}`}>
+                {step === "text" ? (
+                  <textarea
+                    ref={textareaRef}
+                    value={questionText}
+                    onChange={(e) => setQuestionText(e.target.value)}
+                    placeholder="궁금한 점을 적어보세요"
+                    className="w-full bg-transparent text-white text-3xl font-bold resize-none outline-none drop-shadow-xl"
+                    rows={1}
+                  />
+                ) : (
+                  <div className="w-full text-white text-3xl font-bold drop-shadow-xl whitespace-pre-wrap">
+                    {questionText}
+                  </div>
+                )}
               </div>
             )}
 
-            <div 
-              className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-40"
-              onPointerDown={(e) => e.stopPropagation()} 
-            >
-              <button 
-                onClick={handleTextIconClick} 
-                className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-colors ${
-                  isTextMode ? "bg-white text-black" : "bg-black/40 backdrop-blur-md text-white border border-white/20"
-                }`}
+            {/* 모자이크 단계에서만 나타나는 펜 아이콘 */}
+            {step === "mosaic" && (
+              <div 
+                className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-40"
+                onPointerDown={(e) => e.stopPropagation()} 
               >
-                <Type className="w-5 h-5" />
-              </button>
-              <button 
-                onClick={handleMosaicIconClick} 
-                className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-colors ${
-                  isMosaicMode ? "bg-white text-black" : "bg-black/40 backdrop-blur-md text-white border border-white/20"
-                }`}
-              >
-                <Pen className="w-5 h-5" />
-              </button>
-            </div>
+                <button 
+                  onClick={handleMosaicIconClick} 
+                  className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-colors ${
+                    isMosaicMode ? "bg-white text-black" : "bg-black/40 backdrop-blur-md text-white border border-white/20"
+                  }`}
+                >
+                  <Pen className="w-5 h-5" />
+                </button>
+              </div>
+            )}
 
           </div>
         </div>
       </div>
 
       <div className="flex justify-center pb-12 z-50">
-        <button onClick={handleUploadClick} disabled={isUploading} className="px-8 py-3 bg-[#3a3a3a] rounded-full text-white text-sm font-medium disabled:opacity-50 shadow-lg hover:bg-[#2a2a2a] transition-colors">
-          업로드
-        </button>
+        {step === "text" ? (
+          <button 
+            onClick={handleNextStep} 
+            disabled={questionText.trim().length === 0}
+            className="px-8 py-3 bg-[#3a3a3a] rounded-full text-white text-sm font-medium disabled:opacity-50 shadow-lg hover:bg-[#2a2a2a] transition-colors"
+          >
+            다음
+          </button>
+        ) : (
+          <button 
+            onClick={handleUploadClick} 
+            disabled={isUploading} 
+            className="px-8 py-3 bg-[#FF6200] rounded-full text-white text-sm font-medium disabled:opacity-50 shadow-lg hover:bg-[#e55800] transition-colors"
+          >
+            업로드
+          </button>
+        )}
       </div>
     </div>
   )
