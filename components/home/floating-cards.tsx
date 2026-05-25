@@ -46,7 +46,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     const updateSmoothScroll = () => {
       if (!active) return
       
-      // 피드백 오버레이가 열려있을 때도 스크롤 연산 자체는 배경에서 자연스럽게 유지되도록 selectedPost 조건문을 제거했습니다.
       const target = scrollYRef.current
       const current = smoothScrollYRef.current
       const diff = target - current
@@ -66,23 +65,21 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     return () => { active = false }
   }, [])
 
-  // 💡 [핵심 수정] 스크롤바 이동 값을 3D 렌더링 엔진으로 확실하게 전달합니다.
+  // 💡 스크롤바 이동 값을 3D 렌더링 엔진으로 확실하게 전달합니다.
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
 
     const handleScroll = () => {
-      // 스크롤이 발생할 때마다 3D 타겟 좌표(scrollYRef)를 갱신합니다.
       scrollYRef.current = container.scrollTop
     }
 
-    // 초기 스크롤 바인딩 및 패시브 리스너 등록
     container.addEventListener("scroll", handleScroll, { passive: true })
     
     return () => {
       container.removeEventListener("scroll", handleScroll)
     }
-  }, [selectedPost, userPosts.length]) // 의존성 배열을 보강하여 카드가 로드된 후 리스너가 정상 작동하도록 보장합니다.
+  }, [selectedPost, userPosts.length])
 
   // 로컬스토리지 튜토리얼 데이터 로드
   useEffect(() => {
@@ -327,7 +324,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   return (
     <div 
       ref={containerRef}
-      /* 스크롤 이벤트를 정상 포착하기 위해 overflow-y-scroll과 가시 스크롤바 트랙 스타일 명시 */
       className="relative w-full h-full overflow-y-scroll overflow-x-hidden bg-white
                  [&::-webkit-scrollbar]:w-[6px]
                  [&::-webkit-scrollbar-track]:bg-transparent
@@ -355,7 +351,9 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           
           const translateX = Math.cos(angle) * tunnelRadius
           const translateY = Math.sin(angle) * tunnelRadius
-          const rotateZ = (i % 2 === 0 ? 6 : -6) + Math.sin(i) * 6
+          
+          // 💡 [수정] 비스듬히 누워있던 경사각 효과를 0으로 고정했습니다.
+          const rotateZ = 0
 
           // 실시간으로 갱신되는 smoothScrollY 수치를 곱해 스크롤할 때 앞으로 돌진하도록 제어합니다.
           const initialZ = -i * 450 
@@ -386,7 +384,8 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 backfaceVisibility: "hidden"
               }}
             >
-              <div className="relative w-full h-full bg-white rounded-[12px] overflow-hidden shadow-[0_12px_32px_rgba(0,0,0,0.06)] border border-zinc-200/40">
+              {/* 💡 [수정] 기존 rounded-[12px] 모서리를 시안 가이드라인을 위해 rounded-none(직각)으로 변경했습니다. */}
+              <div className="relative w-full h-full bg-white rounded-none overflow-hidden shadow-[0_12px_32px_rgba(0,0,0,0.06)] border border-zinc-200/40">
                 <Image 
                   src={post.imageData} 
                   alt="Style Space Element" 
