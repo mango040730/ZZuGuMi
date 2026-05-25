@@ -69,9 +69,9 @@ export function UploadPreviewScreen({
 
       const { clientWidth } = container
       
-      // 💡 최종 출력 사이즈 350x704 유지
-      const outWidth = 350
-      const outHeight = 704
+      // 💡 홈 화면의 카드 사이즈(220x290) 비율에 맞춘 고화질 출력 해상도 (220*4, 290*4)
+      const outWidth = 880
+      const outHeight = 1160
 
       const canvas = document.createElement("canvas")
       canvas.width = outWidth
@@ -198,9 +198,8 @@ export function UploadPreviewScreen({
   }, [step])
 
   return (
-    // 💡 overflow-hidden을 추가하여 페이지 자체의 스크롤을 방지합니다.
     <div className="fixed inset-0 bg-black z-50 flex flex-col overflow-hidden">
-      {/* 헤더 영역 */}
+      {/* 상단 헤더 영역 */}
       <div className="p-4 flex justify-between items-center z-50 shrink-0">
         {step === "text" ? (
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center">
@@ -213,12 +212,12 @@ export function UploadPreviewScreen({
         )}
       </div>
 
-      {/* 💡 이미지가 들어가는 중앙 영역: flex-1과 min-h-0으로 가용 공간 내에서만 렌더링되게 제한 */}
-      <div className="flex-1 flex items-center justify-center px-4 min-h-0">
+      {/* 중앙 사진 편집 영역 */}
+      <div className="flex-1 w-full px-4 pb-2 min-h-0 flex justify-center items-center">
         <div 
           ref={containerRef}
-          // 💡 높이를 화면에 맞추고(h-full), 비율(aspect-[350/704])에 따라 너비가 자동으로 조절되게 설정
-          className={`relative h-full max-h-[704px] aspect-[350/704] bg-zinc-900 rounded-3xl overflow-hidden shrink-0 ${
+          // 💡 화면의 남는 높이에 꽉 차도록 하면서, 홈 화면 카드와 동일한 비율(22/29)을 유지합니다.
+          className={`relative h-full max-h-[75vh] aspect-[22/29] bg-zinc-900 rounded-3xl overflow-hidden shrink-0 ${
             step === "mosaic" && isMosaicMode ? "touch-none cursor-crosshair" : ""
           }`}
           onPointerDown={(e) => {
@@ -332,7 +331,7 @@ export function UploadPreviewScreen({
       </div>
 
       {/* 하단 버튼 영역 */}
-      <div className="flex justify-center pt-6 pb-10 z-50 shrink-0">
+      <div className="flex justify-center pt-4 pb-8 z-50 shrink-0">
         {step === "text" ? (
           <button 
             onClick={handleNextStep} 
