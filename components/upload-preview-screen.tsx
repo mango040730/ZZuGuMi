@@ -69,7 +69,7 @@ export function UploadPreviewScreen({
 
       const { clientWidth } = container
       
-      // 💡 최종 출력 사이즈를 350x704로 고정합니다.
+      // 💡 최종 출력 사이즈 350x704 유지
       const outWidth = 350
       const outHeight = 704
 
@@ -88,10 +88,8 @@ export function UploadPreviewScreen({
       const sx = (img.width - sw) / 2
       const sy = (img.height - sh) / 2
 
-      // 1. 기본 원본 이미지 그리기 (350x704 크기에 맞춰 꽉 차게 크롭)
       ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outWidth, outHeight)
 
-      // 2. 모자이크 처리
       if (strokes.length > 0 || currentStroke.length > 0) {
         const strokeScale = outWidth / clientWidth
         const allStrokes = currentStroke.length > 0 ? [...strokes, currentStroke] : strokes
@@ -148,7 +146,6 @@ export function UploadPreviewScreen({
         }
       }
 
-      // 3. 텍스트 병합
       if (questionText.trim().length > 0) {
         const textScale = outWidth / clientWidth
         const fontSize = Math.round(30 * textScale) 
@@ -201,7 +198,9 @@ export function UploadPreviewScreen({
   }, [step])
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col overflow-y-auto">
+    // 💡 overflow-hidden을 추가하여 페이지 자체의 스크롤을 방지합니다.
+    <div className="fixed inset-0 bg-black z-50 flex flex-col overflow-hidden">
+      {/* 헤더 영역 */}
       <div className="p-4 flex justify-between items-center z-50 shrink-0">
         {step === "text" ? (
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center">
@@ -214,126 +213,126 @@ export function UploadPreviewScreen({
         )}
       </div>
 
-      <div className="flex-1 flex items-center justify-center px-4 py-4">
-        <div className="relative w-full flex justify-center">
-          <div 
-            ref={containerRef}
-            // 💡 화면 렌더링 비율도 350/704 로 맞춰줍니다.
-            className={`relative w-full max-w-[350px] aspect-[350/704] bg-zinc-900 rounded-3xl overflow-hidden shrink-0 ${
-              step === "mosaic" && isMosaicMode ? "touch-none cursor-crosshair" : ""
-            }`}
-            onPointerDown={(e) => {
-              if (step === "mosaic" && isMosaicMode) {
-                setIsPointerDown(true)
-                const rect = e.currentTarget.getBoundingClientRect()
-                setCurrentStroke([{ x: e.clientX - rect.left, y: e.clientY - rect.top }])
+      {/* 💡 이미지가 들어가는 중앙 영역: flex-1과 min-h-0으로 가용 공간 내에서만 렌더링되게 제한 */}
+      <div className="flex-1 flex items-center justify-center px-4 min-h-0">
+        <div 
+          ref={containerRef}
+          // 💡 높이를 화면에 맞추고(h-full), 비율(aspect-[350/704])에 따라 너비가 자동으로 조절되게 설정
+          className={`relative h-full max-h-[704px] aspect-[350/704] bg-zinc-900 rounded-3xl overflow-hidden shrink-0 ${
+            step === "mosaic" && isMosaicMode ? "touch-none cursor-crosshair" : ""
+          }`}
+          onPointerDown={(e) => {
+            if (step === "mosaic" && isMosaicMode) {
+              setIsPointerDown(true)
+              const rect = e.currentTarget.getBoundingClientRect()
+              setCurrentStroke([{ x: e.clientX - rect.left, y: e.clientY - rect.top }])
+            }
+          }}
+          onPointerMove={(e) => {
+            if (step === "mosaic" && isMosaicMode && isPointerDown) {
+              const rect = e.currentTarget.getBoundingClientRect()
+              setCurrentStroke(prev => [...prev, { x: e.clientX - rect.left, y: e.clientY - rect.top }])
+            }
+          }}
+          onPointerUp={() => {
+            if (step === "mosaic" && isMosaicMode && isPointerDown) {
+              setIsPointerDown(false)
+              if (currentStroke.length > 0) {
+                setStrokes(prev => [...prev, currentStroke])
+                setCurrentStroke([])
               }
-            }}
-            onPointerMove={(e) => {
-              if (step === "mosaic" && isMosaicMode && isPointerDown) {
-                const rect = e.currentTarget.getBoundingClientRect()
-                setCurrentStroke(prev => [...prev, { x: e.clientX - rect.left, y: e.clientY - rect.top }])
-              }
-            }}
-            onPointerUp={() => {
-              if (step === "mosaic" && isMosaicMode && isPointerDown) {
-                setIsPointerDown(false)
-                if (currentStroke.length > 0) {
-                  setStrokes(prev => [...prev, currentStroke])
-                  setCurrentStroke([])
-                }
-              }
-            }}
-          >
-            {capturedImage && (
-              <img
-                src={capturedImage}
-                alt="Captured photo"
-                className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+            }
+          }}
+        >
+          {capturedImage && (
+            <img
+              src={capturedImage}
+              alt="Captured photo"
+              className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+            />
+          )}
+
+          {capturedImage && (strokes.length > 0 || currentStroke.length > 0) && (
+            <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
+              <defs>
+                <filter id="mosaicBlur" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="16" />
+                </filter>
+                <mask id="brushMask">
+                  <rect width="100%" height="100%" fill="black" />
+                  {[...strokes, currentStroke].map((stroke, i) => {
+                    if (stroke.length === 0) return null
+                    if (stroke.length === 1) {
+                      return <circle key={i} cx={stroke[0].x} cy={stroke[0].y} r="25" fill="white" />
+                    }
+                    const d = `M ${stroke.map(p => `${p.x} ${p.y}`).join(' L ')}`
+                    return (
+                      <path
+                        key={i}
+                        d={d}
+                        stroke="white"
+                        strokeWidth="50"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        fill="none"
+                      />
+                    )
+                  })}
+                </mask>
+              </defs>
+              <image 
+                href={capturedImage} 
+                width="100%" 
+                height="100%" 
+                preserveAspectRatio="xMidYMid slice" 
+                filter="url(#mosaicBlur)"
+                mask="url(#brushMask)"
               />
-            )}
+            </svg>
+          )}
+          
+          {step === "text" && <div className="absolute inset-0 bg-black/40 pointer-events-none z-20" />}
 
-            {capturedImage && (strokes.length > 0 || currentStroke.length > 0) && (
-              <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
-                <defs>
-                  <filter id="mosaicBlur" x="-20%" y="-20%" width="140%" height="140%">
-                    <feGaussianBlur stdDeviation="16" />
-                  </filter>
-                  <mask id="brushMask">
-                    <rect width="100%" height="100%" fill="black" />
-                    {[...strokes, currentStroke].map((stroke, i) => {
-                      if (stroke.length === 0) return null
-                      if (stroke.length === 1) {
-                        return <circle key={i} cx={stroke[0].x} cy={stroke[0].y} r="25" fill="white" />
-                      }
-                      const d = `M ${stroke.map(p => `${p.x} ${p.y}`).join(' L ')}`
-                      return (
-                        <path
-                          key={i}
-                          d={d}
-                          stroke="white"
-                          strokeWidth="50"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          fill="none"
-                        />
-                      )
-                    })}
-                  </mask>
-                </defs>
-                <image 
-                  href={capturedImage} 
-                  width="100%" 
-                  height="100%" 
-                  preserveAspectRatio="xMidYMid slice" 
-                  filter="url(#mosaicBlur)"
-                  mask="url(#brushMask)"
+          {(step === "text" || questionText.length > 0) && (
+            <div className={`absolute top-0 left-0 right-0 p-6 flex flex-col z-30 ${step !== "text" ? 'pointer-events-none' : ''}`}>
+              {step === "text" ? (
+                <textarea
+                  ref={textareaRef}
+                  value={questionText}
+                  onChange={(e) => setQuestionText(e.target.value)}
+                  placeholder="궁금한 점을 적어보세요"
+                  className="w-full bg-transparent text-white text-2xl sm:text-3xl font-bold resize-none outline-none drop-shadow-xl"
+                  rows={1}
                 />
-              </svg>
-            )}
-            
-            {step === "text" && <div className="absolute inset-0 bg-black/40 pointer-events-none z-20" />}
+              ) : (
+                <div className="w-full text-white text-2xl sm:text-3xl font-bold drop-shadow-xl whitespace-pre-wrap">
+                  {questionText}
+                </div>
+              )}
+            </div>
+          )}
 
-            {(step === "text" || questionText.length > 0) && (
-              <div className={`absolute top-0 left-0 right-0 p-6 flex flex-col z-30 ${step !== "text" ? 'pointer-events-none' : ''}`}>
-                {step === "text" ? (
-                  <textarea
-                    ref={textareaRef}
-                    value={questionText}
-                    onChange={(e) => setQuestionText(e.target.value)}
-                    placeholder="궁금한 점을 적어보세요"
-                    className="w-full bg-transparent text-white text-3xl font-bold resize-none outline-none drop-shadow-xl"
-                    rows={1}
-                  />
-                ) : (
-                  <div className="w-full text-white text-3xl font-bold drop-shadow-xl whitespace-pre-wrap">
-                    {questionText}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {step === "mosaic" && (
-              <div 
-                className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-40"
-                onPointerDown={(e) => e.stopPropagation()} 
+          {step === "mosaic" && (
+            <div 
+              className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-40"
+              onPointerDown={(e) => e.stopPropagation()} 
+            >
+              <button 
+                onClick={handleMosaicIconClick} 
+                className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-colors ${
+                  isMosaicMode ? "bg-white text-black" : "bg-black/40 backdrop-blur-md text-white border border-white/20"
+                }`}
               >
-                <button 
-                  onClick={handleMosaicIconClick} 
-                  className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-colors ${
-                    isMosaicMode ? "bg-white text-black" : "bg-black/40 backdrop-blur-md text-white border border-white/20"
-                  }`}
-                >
-                  <Pen className="w-5 h-5" />
-                </button>
-              </div>
-            )}
+                <Pen className="w-5 h-5" />
+              </button>
+            </div>
+          )}
 
-          </div>
         </div>
       </div>
 
-      <div className="flex justify-center pb-12 z-50 shrink-0">
+      {/* 하단 버튼 영역 */}
+      <div className="flex justify-center pt-6 pb-10 z-50 shrink-0">
         {step === "text" ? (
           <button 
             onClick={handleNextStep} 
