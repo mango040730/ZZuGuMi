@@ -14,7 +14,6 @@ export function UploadPreviewScreen({
   onUpload,
   capturedImage
 }: UploadPreviewScreenProps) {
-  // 단계 관리를 위한 상태 추가: "text" (텍스트 입력) -> "mosaic" (모자이크 편집)
   const [step, setStep] = useState<"text" | "mosaic">("text")
   const [questionText, setQuestionText] = useState("")
   const [isMosaicMode, setIsMosaicMode] = useState(false)
@@ -68,9 +67,11 @@ export function UploadPreviewScreen({
         img.src = capturedImage
       })
 
-      const { clientWidth, clientHeight } = container
-      const outWidth = img.width
-      const outHeight = img.width * (clientHeight / clientWidth)
+      const { clientWidth } = container
+      
+      // 💡 최종 출력 사이즈를 350x704로 고정합니다.
+      const outWidth = 350
+      const outHeight = 704
 
       const canvas = document.createElement("canvas")
       canvas.width = outWidth
@@ -87,7 +88,7 @@ export function UploadPreviewScreen({
       const sx = (img.width - sw) / 2
       const sy = (img.height - sh) / 2
 
-      // 1. 기본 원본 이미지 그리기
+      // 1. 기본 원본 이미지 그리기 (350x704 크기에 맞춰 꽉 차게 크롭)
       ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outWidth, outHeight)
 
       // 2. 모자이크 처리
@@ -200,8 +201,8 @@ export function UploadPreviewScreen({
   }, [step])
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
-      <div className="p-4 flex justify-between items-center z-50">
+    <div className="fixed inset-0 bg-black z-50 flex flex-col overflow-y-auto">
+      <div className="p-4 flex justify-between items-center z-50 shrink-0">
         {step === "text" ? (
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center">
             <X className="w-6 h-6 text-white" strokeWidth={1.5} />
@@ -213,11 +214,12 @@ export function UploadPreviewScreen({
         )}
       </div>
 
-      <div className="flex-1 flex items-center justify-center px-4">
-        <div className="relative w-full max-w-sm">
+      <div className="flex-1 flex items-center justify-center px-4 py-4">
+        <div className="relative w-full flex justify-center">
           <div 
             ref={containerRef}
-            className={`relative aspect-[3/4] bg-zinc-900 rounded-3xl overflow-hidden ${
+            // 💡 화면 렌더링 비율도 350/704 로 맞춰줍니다.
+            className={`relative w-full max-w-[350px] aspect-[350/704] bg-zinc-900 rounded-3xl overflow-hidden shrink-0 ${
               step === "mosaic" && isMosaicMode ? "touch-none cursor-crosshair" : ""
             }`}
             onPointerDown={(e) => {
@@ -290,7 +292,6 @@ export function UploadPreviewScreen({
               </svg>
             )}
             
-            {/* 텍스트 입력 모드일 때 배경을 어둡게 처리 */}
             {step === "text" && <div className="absolute inset-0 bg-black/40 pointer-events-none z-20" />}
 
             {(step === "text" || questionText.length > 0) && (
@@ -312,7 +313,6 @@ export function UploadPreviewScreen({
               </div>
             )}
 
-            {/* 모자이크 단계에서만 나타나는 펜 아이콘 */}
             {step === "mosaic" && (
               <div 
                 className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-40"
@@ -333,7 +333,7 @@ export function UploadPreviewScreen({
         </div>
       </div>
 
-      <div className="flex justify-center pb-12 z-50">
+      <div className="flex justify-center pb-12 z-50 shrink-0">
         {step === "text" ? (
           <button 
             onClick={handleNextStep} 
