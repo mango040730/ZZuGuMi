@@ -1,7 +1,24 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { X, Type } from "lucide-react" // Eraser 대신 Type 아이콘 사용
+import { X, Type } from "lucide-react"
+
+// 투표 작성 모달 컴포넌트
+const PollModal = ({ onClose }: { onClose: () => void }) => (
+  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
+    <div className="bg-zinc-900 border border-white/20 p-6 rounded-3xl w-full max-w-sm text-white shadow-2xl">
+      <h2 className="text-xl font-bold mb-4">투표 작성</h2>
+      <p className="mb-4 text-zinc-400">투표 내용을 입력하세요.</p>
+      {/* 여기에 투표 입력 폼 구현 가능 */}
+      <button 
+        onClick={onClose} 
+        className="mt-4 w-full py-4 bg-[#FF6200] rounded-full font-bold"
+      >
+        완료
+      </button>
+    </div>
+  </div>
+)
 
 interface UploadPreviewScreenProps {
   onClose: () => void
@@ -17,6 +34,7 @@ export function UploadPreviewScreen({
   const [step, setStep] = useState<"text" | "mosaic">("text")
   const [questionText, setQuestionText] = useState("")
   const [isMosaicMode, setIsMosaicMode] = useState(false)
+  const [isPollModalOpen, setIsPollModalOpen] = useState(false) // 모달 상태 추가
   const [strokes, setStrokes] = useState<{x: number, y: number}[][]>([])
   const [currentStroke, setCurrentStroke] = useState<{x: number, y: number}[]>([])
   const [isPointerDown, setIsPointerDown] = useState(false)
@@ -35,14 +53,12 @@ export function UploadPreviewScreen({
     }
   }
 
-  // 텍스트 수정 모드로 전환
   const handleEditText = () => {
     setStep("text")
   }
 
   const handleUploadClick = async () => {
     if (isUploading) return
-
     if (!capturedImage) {
       onUpload(questionText, capturedImage)
       return
@@ -166,10 +182,6 @@ export function UploadPreviewScreen({
           ctx.fillText(line, padding, currentY, maxWidth)
           currentY += fontSize * 1.3 
         })
-
-        ctx.shadowBlur = 0
-        ctx.shadowOffsetX = 0
-        ctx.shadowOffsetY = 0
       }
 
       const mergedImageData = canvas.toDataURL("image/jpeg", 0.9)
@@ -203,7 +215,7 @@ export function UploadPreviewScreen({
         </button>
       </div>
 
-      <div className="flex-1 w-full px-4 pb-2 min-h-0 flex justify-center items-center">
+      <div className="flex-1 w-full px-4 pb-2 min-h-0 flex justify-center items-center relative">
         <div 
           ref={containerRef}
           className={`relative h-full max-h-[75vh] aspect-[22/29] bg-zinc-900 rounded-3xl overflow-hidden shrink-0 ${
@@ -316,18 +328,29 @@ export function UploadPreviewScreen({
                 </svg>
               </button>
 
-              {/* 텍스트 수정 버튼 */}
               <button 
                 onClick={handleEditText}
                 className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg bg-black/40 backdrop-blur-md text-white border border-white/20"
               >
                 <Type className="w-5 h-5" />
               </button>
+
+              {/* 투표 아이콘 추가 */}
+              <button 
+                onClick={() => setIsPollModalOpen(true)}
+                className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg bg-black/40 backdrop-blur-md text-white border border-white/20"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2.5 12H5.88197C6.56717 12 7.19357 12.3871 7.5 13C7.80643 13.6129 8.43283 14 9.11803 14H14.882C15.5672 14 16.1936 13.6129 16.5 13C16.8064 12.3871 17.4328 12 18.118 12H21.5M8.96656 4H15.0334C16.1103 4 16.6487 4 17.1241 4.16396C17.5445 4.30896 17.9274 4.5456 18.2451 4.85675C18.6043 5.2086 18.8451 5.6902 19.3267 6.65337L21.4932 10.9865C21.6822 11.3645 21.7767 11.5535 21.8434 11.7515C21.9026 11.9275 21.9453 12.1085 21.971 12.2923C22 12.4992 22 12.7105 22 13.1331V15.2C22 16.8802 22 17.7202 21.673 18.362C21.3854 18.9265 20.9265 19.3854 20.362 19.673C19.7202 20 18.8802 20 17.2 20H6.8C5.11984 20 4.27976 20 3.63803 19.673C3.07354 19.3854 2.6146 18.9265 2.32698 18.362C2 17.7202 2 16.8802 2 15.2V13.1331C2 12.7105 2 12.4992 2.02897 12.2923C2.05471 12.1085 2.09744 11.9275 2.15662 11.7515C2.22326 11.5535 2.31776 11.3645 2.50675 10.9865L4.67331 6.65337C5.1549 5.69019 5.3957 5.2086 5.75495 4.85675C6.07263 4.5456 6.45551 4.30896 6.87589 4.16396C7.35125 4 7.88969 4 8.96656 4Z" />
+                </svg>
+              </button>
             </div>
           )}
 
         </div>
       </div>
+
+      {isPollModalOpen && <PollModal onClose={() => setIsPollModalOpen(false)} />}
 
       <div className="flex justify-center pt-4 pb-8 px-4 z-50 shrink-0">
         {step === "text" ? (
