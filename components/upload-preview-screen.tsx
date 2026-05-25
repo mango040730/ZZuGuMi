@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { X, Pen } from "lucide-react"
+import { X } from "lucide-react"
 
 interface UploadPreviewScreenProps {
   onClose: () => void
@@ -192,7 +192,6 @@ export function UploadPreviewScreen({
 
   return (
     <div className="fixed inset-0 bg-black z-50 flex flex-col overflow-hidden">
-      {/* 💡 닫기 버튼으로 통일 (단계와 관계없이 항상 호출) */}
       <div className="p-4 flex justify-end items-center z-50 shrink-0">
         <button onClick={onClose} className="w-10 h-10 flex items-center justify-center">
           <X className="w-7 h-7 text-white" strokeWidth={1.5} />
@@ -307,7 +306,18 @@ export function UploadPreviewScreen({
                   isMosaicMode ? "bg-white text-black" : "bg-black/40 backdrop-blur-md text-white border border-white/20"
                 }`}
               >
-                <Pen className="w-5 h-5" />
+                <svg 
+                  width="22" 
+                  height="22" 
+                  viewBox="0 0 22 22" 
+                  fill="none" 
+                  className={isMosaicMode ? "stroke-black" : "stroke-white"} 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                >
+                  <path d="M3.5 21V16M3.5 6V1M1 3.5H6M1 18.5H6M12 2L10.2658 6.50886C9.98381 7.24209 9.84281 7.60871 9.62353 7.91709C9.42919 8.1904 9.1904 8.42919 8.91709 8.62353C8.60871 8.8428 8.24209 8.98381 7.50886 9.26582L3 11L7.50886 12.7342C8.24209 13.0162 8.60871 13.1572 8.91709 13.3765C9.1904 13.5708 9.42919 13.8096 9.62353 14.0829C9.84281 14.3913 9.98381 14.7579 10.2658 15.4911L12 20L13.7342 15.4911C14.0162 14.7579 14.1572 14.3913 14.3765 14.0829C14.5708 13.8096 14.8096 13.5708 15.0829 13.3765C15.3913 13.1572 15.7579 13.0162 16.4911 12.7342L21 11L16.4911 9.26582C15.7579 8.98381 15.3913 8.8428 15.0829 8.62353C14.8096 8.42919 14.5708 8.1904 14.3765 7.91709C14.1572 7.60871 14.0162 7.24209 13.7342 6.50886L12 2Z" />
+                </svg>
               </button>
             </div>
           )}
