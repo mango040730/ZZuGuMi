@@ -17,7 +17,7 @@ interface FloatingCardsProps {
 }
 
 export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
-  // 3D 터널 탐색용 스크롤 좌표 및 부드러운 감쇠(Lerp) 좌표 시스템 유지
+  // 3D 터널 탐색용 스크롤 좌표 및 부드러운 감쇠(Lerp) 좌표 시스템
   const [smoothScrollY, setSmoothScrollY] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
   
@@ -39,17 +39,14 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   const [isResetting, setIsResetting] = useState(false)
   const [showExitModal, setShowExitModal] = useState(false)
 
-  // 📱 3D 터널 모멘텀 감쇠 애니메이션 루프 (원래 로직 유지)
+  // 📱 3D 터널 모멘텀 감쇠 애니메이션 루프
   useEffect(() => {
     let active = true
 
     const updateSmoothScroll = () => {
       if (!active) return
-      if (selectedPost) {
-        requestAnimationFrame(updateSmoothScroll)
-        return
-      }
-
+      
+      // 피드백 오버레이가 열려있을 때도 스크롤 연산 자체는 배경에서 자연스럽게 유지되도록 selectedPost 조건문을 제거했습니다.
       const target = scrollYRef.current
       const current = smoothScrollYRef.current
       const diff = target - current
@@ -67,24 +64,25 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
     requestAnimationFrame(updateSmoothScroll)
     return () => { active = false }
-  }, [selectedPost])
+  }, [])
 
-  // 💡 [수정] 복잡한 투핑거 핀치 줌, 휠 이벤트를 모두 걷어내고 순수 브라우저 스크롤만 연동
+  // 💡 [핵심 수정] 스크롤바 이동 값을 3D 렌더링 엔진으로 확실하게 전달합니다.
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
 
     const handleScroll = () => {
-      if (!selectedPost) {
-        scrollYRef.current = container.scrollTop
-      }
+      // 스크롤이 발생할 때마다 3D 타겟 좌표(scrollYRef)를 갱신합니다.
+      scrollYRef.current = container.scrollTop
     }
 
+    // 초기 스크롤 바인딩 및 패시브 리스너 등록
     container.addEventListener("scroll", handleScroll, { passive: true })
+    
     return () => {
       container.removeEventListener("scroll", handleScroll)
     }
-  }, [selectedPost])
+  }, [selectedPost, userPosts.length]) // 의존성 배열을 보강하여 카드가 로드된 후 리스너가 정상 작동하도록 보장합니다.
 
   // 로컬스토리지 튜토리얼 데이터 로드
   useEffect(() => {
@@ -197,7 +195,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   }
 
   // -------------------------------------------------------------
-  // 📱 [1] 스와이프 피드백 모드 레이아웃
+  // 📱 [1] 스와이프 피드백 모드 레이아웃 (생략 없음)
   // -------------------------------------------------------------
   if (selectedPost) {
     const activePost = currentQueueIndex < feedbackQueue.length ? feedbackQueue[currentQueueIndex] : feedbackQueue[feedbackQueue.length - 1]
@@ -247,7 +245,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                   zIndex: 5
                 }}
               >
-                <Image src={nextPost.imageData} alt="Next StylePreview" fill className="object-cover pointer-events-none" unoptimized />
+                <Image src={nextPost.imageData} alt="Next Style" fill className="object-cover pointer-events-none" unoptimized />
               </div>
             )}
 
@@ -260,7 +258,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 zIndex: 10
               }}
             >
-              <Image src={activePost.imageData} alt="Uploaded Fashion Style" fill className="object-cover pointer-events-none" unoptimized />
+              <Image src={activePost.imageData} alt="Current Style" fill className="object-cover pointer-events-none" unoptimized />
 
               {swipeOffset > 20 && (
                 <div className="absolute inset-0 bg-emerald-500/10 flex items-center justify-center pointer-events-none transition-opacity" style={{ opacity: Math.min(0.8, swipeOffset / 100) }}>
@@ -292,12 +290,12 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                   </div>
                   <ThumbsUp className="w-11 h-11 text-white" strokeWidth={1.5} />
                 </div>
-                <h2 className="text-2xl font-bold mt-8 text-center tracking-wide leading-snug">쭈업은 오른쪽, 쭈따는 왼쪽</h2>
+                <h2 className="text-2xl font-bold mt-8 text-center tracking-wide">**쭈업은 오른쪽, 쭈따는 왼쪽**</h2>
                 <p className="text-sm text-zinc-300 mt-2 text-center">좌우로 화면을 밀어봐요</p>
               </div>
               <div className="flex flex-col gap-3 w-full max-w-[320px] mx-auto pb-4">
-                <button onClick={handleConfirmTutorial} className="w-full py-4 bg-[#545454] text-white rounded-xl font-bold text-center active:scale-95 transition-transform">확인</button>
-                <button onClick={handleHideTutorialForever} className="w-full py-4 bg-white text-black rounded-xl font-bold text-center active:scale-95 transition-transform shadow-lg">더이상 보지 않기</button>
+                <button onClick={handleConfirmTutorial} className="w-full py-4 bg-[#545454] text-white rounded-xl font-bold text-center">확인</button>
+                <button onClick={handleHideTutorialForever} className="w-full py-4 bg-white text-black rounded-xl font-bold text-center shadow-lg">더이상 보지 않기</button>
               </div>
             </div>
           )}
@@ -324,26 +322,26 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   }
 
   // -------------------------------------------------------------
-  // 🌌 [2] 원래의 3D 터널 은하수 탐색 레이아웃 복구 + 우측 스크롤 바 노출
+  // 🌌 [2] 3D 터널 레이아웃 + 스크롤바 바인딩 연동 엔진
   // -------------------------------------------------------------
   return (
     <div 
       ref={containerRef}
-      /* 💡 원래의 수직 스크롤 기능을 그대로 살리고, 우측 스크롤바가 회색으로 자연스럽게 표시되도록 스타일셋을 지정했습니다. */
-      className="relative w-full h-full overflow-y-scroll overflow-x-hidden select-none bg-white
+      /* 스크롤 이벤트를 정상 포착하기 위해 overflow-y-scroll과 가시 스크롤바 트랙 스타일 명시 */
+      className="relative w-full h-full overflow-y-scroll overflow-x-hidden bg-white
                  [&::-webkit-scrollbar]:w-[6px]
                  [&::-webkit-scrollbar-track]:bg-transparent
-                 [&::-webkit-scrollbar-thumb]:bg-zinc-300/80
+                 [&::-webkit-scrollbar-thumb]:bg-zinc-300
                  [&::-webkit-scrollbar-thumb]:rounded-full"
       style={{ touchAction: "pan-y" }}
     >
-      {/* 📜 가상 스페이스 레일 (스크롤 범위를 잡아주는 가상 트랙) */}
+      {/* 가상 스페이스 레일: 스크롤 컨테이너의 가상 스크롤바 높이를 유연하게 잡아주는 가상 높이 엘리먼트 */}
       <div 
         className="w-full pointer-events-none" 
         style={{ height: `${100 + userPosts.length * 45}vh` }} 
       />
 
-      {/* 📌 고정 3D 시점 카메라 프레임 */}
+      {/* 고정 3D 시점 카메라 프레임 */}
       <div 
         className="sticky inset-y-0 left-0 w-full h-[calc(100vh-80px)] pointer-events-none flex items-center justify-center"
         style={{ 
@@ -352,7 +350,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
         }}
       >
         {userPosts.map((post, i) => {
-          // 원래 존재하던 3D 좌표 나선형 분배 수학 알고리즘 완전 복원
           const angle = i * 1.37
           const tunnelRadius = 130 + (i * 12) 
           
@@ -360,6 +357,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           const translateY = Math.sin(angle) * tunnelRadius
           const rotateZ = (i % 2 === 0 ? 6 : -6) + Math.sin(i) * 6
 
+          // 실시간으로 갱신되는 smoothScrollY 수치를 곱해 스크롤할 때 앞으로 돌진하도록 제어합니다.
           const initialZ = -i * 450 
           const currentZ = initialZ + (smoothScrollY * 2.2)
 
@@ -378,7 +376,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           return (
             <div
               key={post.id}
-              onClick={() => handleCardClick(i)} // 기존 클릭 액션 복구
+              onClick={() => handleCardClick(i)}
               className="absolute w-[220px] h-[290px] origin-center pointer-events-auto cursor-pointer"
               style={{
                 transform: `translate3d(${translateX}px, ${translateY}px, ${currentZ * 0.4}px) scale(${scale}) rotateZ(${rotateZ}deg)`,
@@ -397,7 +395,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                   unoptimized 
                 />
 
-                {/* 첨부해주신 이미지 형태를 살려, 카드 내부에 등록된 오버레이 텍스트도 매끄럽게 흐르도록 복원했습니다 */}
+                {/* 시안 형태를 반영한 카드 상단 질문글 반투명 오버레이 */}
                 {post.questionText && (
                   <div className="absolute top-2 left-2 right-2 bg-black/40 backdrop-blur-sm p-2 rounded-lg max-h-[50px] overflow-hidden">
                     <p className="text-[10px] text-white font-semibold leading-tight line-clamp-2">
@@ -406,7 +404,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                   </div>
                 )}
 
-                {/* 최신 포스트 뉴 배지 */}
+                {/* 최신 포스트 뉴 배지 (주황색 테마 컬러 지정) */}
                 {i === 0 && (
                   <div className="absolute -top-2 -right-3 px-2 py-1 bg-[#FF6200] rounded-sm">
                     <span className="text-[8px] text-white font-medium">NEW</span>
