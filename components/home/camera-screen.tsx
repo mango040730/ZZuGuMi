@@ -206,7 +206,7 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
                   onClick={() => setZoomLevel(level)}
                   className={`w-9 h-9 flex items-center justify-center rounded-full text-sm font-semibold transition-colors ${
                     Math.abs(zoomLevel - level) < 0.1
-                      ? "bg-[#d4e510] text-black" 
+                      ? "bg-[#FF6200] text-black" 
                       : "text-white hover:bg-white/20"
                   }`}
                 >
