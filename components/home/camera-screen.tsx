@@ -157,54 +157,51 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
 
   return (
     <div 
-      className="fixed inset-0 bg-black z-50 flex flex-col overflow-hidden"
+      className="fixed inset-0 bg-black z-50 overflow-hidden"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchEnd}
     >
-      {/* 상단 닫기 버튼 */}
-      <div className="p-4 flex justify-between items-center z-50">
-        <button
-          onClick={handleClose}
-          className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-full backdrop-blur-md"
-          aria-label="Close camera"
-        >
-          <X className="w-6 h-6 text-white" strokeWidth={1.5} />
-        </button>
+      <div className="absolute inset-0 w-full h-full bg-zinc-900">
+        {error ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p className="text-white text-center px-8 text-sm">{error}</p>
+          </div>
+        ) : (
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-75 ease-out"
+            style={{ 
+              transform: `scale(${facingMode === "user" ? -zoomLevel : zoomLevel}, ${zoomLevel})`
+            }}
+          />
+        )}
       </div>
 
-      {/* 💡 [핵심 해결] 카메라 뷰포트를 전체화면에서 '아이폰 기본 카메라 비율(3:4)'로 변경하여
-          좌우가 강제로 잘려 줌인된 것처럼 보이는 현상을 완벽하게 차단합니다! */}
-      <div className="flex-1 flex items-center justify-center px-4 w-full">
-        <div className="relative w-full max-w-sm aspect-[3/4] bg-zinc-900 rounded-[32px] overflow-hidden shadow-2xl">
-          {error ? (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <p className="text-white text-center px-8 text-sm">{error}</p>
-            </div>
-          ) : (
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-75 ease-out"
-              style={{ 
-                transform: `scale(${facingMode === "user" ? -zoomLevel : zoomLevel}, ${zoomLevel})`
-              }}
-            />
-          )}
+      <div className="relative z-10 flex flex-col h-full justify-between pointer-events-none">
+        
+        <div className="p-4 flex justify-between items-center pointer-events-auto">
+          <button
+            onClick={handleClose}
+            className="w-10 h-10 flex items-center justify-center bg-black/20 rounded-full backdrop-blur-md"
+            aria-label="Close camera"
+          >
+            <X className="w-6 h-6 text-white" strokeWidth={1.5} />
+          </button>
+        </div>
 
-          {/* 줌 컨트롤 (3:4 뷰포트 내부 하단에 네이티브 앱처럼 배치) */}
-          <div className="absolute bottom-5 left-0 right-0 flex justify-center pointer-events-none">
-            <div className="flex items-center gap-4 px-5 py-2 bg-black/40 backdrop-blur-md rounded-full shadow-lg pointer-events-auto">
+        <div className="flex flex-col w-full pointer-events-auto">
+          
+          <div className="flex justify-center mb-6">
+            <div className="flex items-center gap-4 px-5 py-2 bg-black/40 backdrop-blur-md rounded-full shadow-lg">
               {zoomLevels.map((level) => (
                 <button
                   key={level}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setZoomLevel(level)
-                  }}
+                  onClick={() => setZoomLevel(level)}
                   className={`w-9 h-9 flex items-center justify-center rounded-full text-sm font-semibold transition-colors ${
                     Math.abs(zoomLevel - level) < 0.1
                       ? "bg-[#d4e510] text-black" 
@@ -216,32 +213,32 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
               ))}
             </div>
           </div>
+
+          <div className="pb-12 pt-6 flex flex-col items-center justify-center bg-gradient-to-t from-black/50 to-transparent">
+            <div className="relative flex items-center justify-center w-full max-w-sm px-8">
+              <button
+                onClick={handleCapture}
+                disabled={!isReady}
+                className="w-[80px] h-[80px] rounded-full bg-white flex items-center justify-center disabled:opacity-50 transition-transform active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.3)] z-10"
+                aria-label="Take photo"
+              >
+                <div className="w-[66px] h-[66px] rounded-full border-[3px] border-black" />
+              </button>
+
+              <button
+                onClick={toggleCamera}
+                className="absolute right-8 w-12 h-12 flex items-center justify-center bg-black/20 rounded-full backdrop-blur-md transition-transform active:rotate-180 duration-300"
+                aria-label="Flip camera"
+              >
+                <RefreshCw className="w-5 h-5 text-white" strokeWidth={1.5} />
+              </button>
+            </div>
+          </div>
+          
         </div>
       </div>
 
       <canvas ref={canvasRef} className="hidden" />
-
-      {/* 하단 캡처 및 전환 버튼 */}
-      <div className="pb-12 pt-6 flex flex-col items-center justify-center z-20">
-        <div className="relative flex items-center justify-center w-full max-w-sm px-8">
-          <button
-            onClick={handleCapture}
-            disabled={!isReady}
-            className="w-[80px] h-[80px] rounded-full bg-white flex items-center justify-center disabled:opacity-50 transition-transform active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.3)] z-10"
-            aria-label="Take photo"
-          >
-            <div className="w-[66px] h-[66px] rounded-full border-[3px] border-black" />
-          </button>
-
-          <button
-            onClick={toggleCamera}
-            className="absolute right-8 w-12 h-12 flex items-center justify-center bg-white/10 rounded-full backdrop-blur-md transition-transform active:rotate-180 duration-300"
-            aria-label="Flip camera"
-          >
-            <RefreshCw className="w-5 h-5 text-white" strokeWidth={1.5} />
-          </button>
-        </div>
-      </div>
     </div>
   )
 }
