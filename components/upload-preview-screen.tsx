@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { X, Pen, ChevronLeft } from "lucide-react"
+import { X, Pen } from "lucide-react"
 
 interface UploadPreviewScreenProps {
   onClose: () => void
@@ -33,11 +33,6 @@ export function UploadPreviewScreen({
     if (questionText.trim().length > 0) {
       setStep("mosaic")
     }
-  }
-
-  const handlePrevStep = () => {
-    setStep("text")
-    setIsMosaicMode(false)
   }
 
   const handleUploadClick = async () => {
@@ -197,17 +192,11 @@ export function UploadPreviewScreen({
 
   return (
     <div className="fixed inset-0 bg-black z-50 flex flex-col overflow-hidden">
-      {/* 💡 닫힘 버튼을 항상 오른쪽에 위치하도록 justify-end 적용 */}
+      {/* 💡 닫기 버튼으로 통일 (단계와 관계없이 항상 호출) */}
       <div className="p-4 flex justify-end items-center z-50 shrink-0">
-        {step === "text" ? (
-          <button onClick={onClose} className="w-10 h-10 flex items-center justify-center">
-            <X className="w-7 h-7 text-white" strokeWidth={1.5} />
-          </button>
-        ) : (
-          <button onClick={handlePrevStep} className="w-10 h-10 flex items-center justify-center">
-            <ChevronLeft className="w-9 h-9 text-white" strokeWidth={1.5} />
-          </button>
-        )}
+        <button onClick={onClose} className="w-10 h-10 flex items-center justify-center">
+          <X className="w-7 h-7 text-white" strokeWidth={1.5} />
+        </button>
       </div>
 
       <div className="flex-1 w-full px-4 pb-2 min-h-0 flex justify-center items-center">
@@ -326,13 +315,12 @@ export function UploadPreviewScreen({
         </div>
       </div>
 
-      {/* 💡 하단 버튼 영역: 사진 너비(max-w-sm)와 동일하게 맞추고 w-full 적용 */}
       <div className="flex justify-center pt-4 pb-8 px-4 z-50 shrink-0">
         {step === "text" ? (
           <button 
             onClick={handleNextStep} 
             disabled={questionText.trim().length === 0}
-            className="w-full max-w-[calc(100vw-32px)] py-4 bg-[#FF6200] rounded-full text-white text-base font-bold disabled:opacity-50 shadow-lg hover:bg-[#2a2a2a] transition-colors"
+            className="w-full max-w-[calc(100vw-32px)] py-4 bg-[#FF6200] rounded-full text-white text-base font-bold disabled:opacity-50 shadow-lg "
           >
             다음
           </button>
