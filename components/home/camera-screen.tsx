@@ -17,7 +17,8 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment")
   
   const [zoomLevel, setZoomLevel] = useState<number>(1)
-  const zoomLevels = [1, 2, 3]
+  // 💡 수정된 부분: 0.5배율 추가
+  const zoomLevels = [0.5, 1, 2, 3] 
 
   const initialDistance = useRef<number | null>(null)
   const initialZoom = useRef<number>(1)
@@ -92,10 +93,11 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
       cropY = (video.videoHeight - cropHeight) / 2
     }
 
-    const sourceWidth = cropWidth / zoomLevel
-    const sourceHeight = cropHeight / zoomLevel
-    const sourceX = cropX + (cropWidth - sourceWidth) / 2
-    const sourceY = cropY + (cropHeight - sourceHeight) / 2
+    // 💡 0.5배율일 때 캔버스 캡처 영역이 원본 비디오 크기를 넘어가지 않도록 안전장치(Math.min) 추가
+    const sourceWidth = Math.min(cropWidth / zoomLevel, video.videoWidth)
+    const sourceHeight = Math.min(cropHeight / zoomLevel, video.videoHeight)
+    const sourceX = Math.max(0, cropX + (cropWidth - sourceWidth) / 2)
+    const sourceY = Math.max(0, cropY + (cropHeight - sourceHeight) / 2)
 
     canvas.width = 1080
     canvas.height = 1080 / screenAspect
@@ -146,7 +148,8 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
         e.touches[0].clientY - e.touches[1].clientY
       )
       const scaleFactor = currentDist / initialDistance.current
-      const newZoom = Math.min(Math.max(1, initialZoom.current * scaleFactor), 5)
+      // 💡 수정된 부분: 두 손가락으로 축소할 때 최소치를 1에서 0.5로 변경
+      const newZoom = Math.min(Math.max(0.5, initialZoom.current * scaleFactor), 5)
       setZoomLevel(newZoom)
     }
   }
