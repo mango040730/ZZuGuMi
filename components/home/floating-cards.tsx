@@ -218,7 +218,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
               style={{ opacity: Math.min(1, Math.abs(swipeOffset) / 100) }} 
             />
           )}
-          {/* 💡 카드를 아래로 내릴 때 (쭈따) - 아래쪽에서 올라오는 그라데이션 색상을 다시 검은색(#000000)으로 변경 */}
+          {/* 카드를 아래로 내릴 때 (쭈따) - 아래쪽에서 올라오는 어두운 그라데이션 */}
           {swipeOffset > 20 && (
             <div 
               className="absolute inset-0 bg-gradient-to-t from-[#000000]/80 via-[#000000]/40 to-transparent transition-opacity" 
@@ -227,12 +227,18 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           )}
         </div>
 
-        {/* 피드백 현황 및 닫기 버튼 배치 */}
-        <div className="relative h-16 w-full z-40">
-          <span className="absolute left-1/2 -translate-x-1/2 top-5 text-[17px] font-bold text-zinc-800 tracking-wider">
+        {/* 💡 피드백 현황 왼쪽 이동 및 튜토리얼 발생 시 닫기 버튼 비활성화(disabled) 연동 */}
+        <div className="px-6 py-5 flex justify-between items-center z-40">
+          <span className="text-[17px] font-bold text-zinc-800 tracking-wider">
             {completedCount}개 피드백 중
           </span>
-          <button onClick={handleCloseFeedback} className="absolute right-6 top-3 w-10 h-10 flex items-center justify-center rounded-full hover:bg-zinc-100 transition-colors">
+          <button 
+            onClick={handleCloseFeedback} 
+            disabled={showTutorial}
+            className={`w-10 h-10 flex items-center justify-center rounded-full hover:bg-zinc-100 transition-colors ${
+              showTutorial ? "opacity-20 cursor-not-allowed" : "opacity-100"
+            }`}
+          >
             <X className="w-6 h-6 text-black" strokeWidth={1.5} />
           </button>
         </div>
@@ -291,7 +297,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                   </svg>
                 </div>
 
-                {/* 텍xt 설명 */}
+                {/* 텍스트 설명 */}
                 <div className="text-center text-[#EA5C1F] text-[18px] font-bold leading-relaxed mb-8 tracking-tight">
                   <p>쭈업은 위, 쭈따는 아래</p>
                   <p>상하로 화면을 밀어주세요</p>
