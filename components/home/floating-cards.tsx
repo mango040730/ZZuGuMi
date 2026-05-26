@@ -45,7 +45,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   const imageContainerRef = useRef<HTMLDivElement>(null)
   const [imageWidth, setImageWidth] = useState<number | undefined>(undefined)
 
-  // 💡 사진 렌더링 컨테이너의 실제 너비를 측정하여 토스트 너비와 동기화하는 로직
+  // 💡 사진 렌더링 컨테이너의 실제 너비를 측정하여 요소들의 너비와 동기화하는 로직
   useEffect(() => {
     const container = imageContainerRef.current
     if (!container || !selectedPost) return
@@ -288,7 +288,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           </div>
         </div>
 
-        {/* 💡 최상단 영역 (현황 텍스트 삭제, 닫기 버튼만 우측 배치) */}
+        {/* 💡 최상단 영역 (닫기 버튼만 우측 배치) */}
         <div className="relative h-16 w-full z-40 flex justify-end items-center px-6">
           <button 
             onClick={handleCloseFeedback} 
@@ -304,10 +304,15 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
         {/* 📸 사진 렌더링 영역 (flex-col로 변경하여 텍스트와 사진 세로 배치) */}
         <div className="flex-1 w-full px-4 pb-2 min-h-0 flex flex-col justify-center items-center relative z-10">
           
-          {/* 💡 피드백 현황 텍스트를 최상단에서 여기로 이동, mb-3(12px 간격) 추가 */}
-          <span className="text-[17px] font-bold text-zinc-800 tracking-wider mb-3">
-            {completedCount}개 피드백 중
-          </span>
+          {/* 💡 피드백 현황 텍스트를 왼쪽으로 정렬 (사진 영역 너비에 맞춤), mb-3(12px 간격) 유지 */}
+          <div 
+            className="flex justify-start mb-3"
+            style={{ width: imageWidth ? `${imageWidth}px` : '100%', maxWidth: '100%' }}
+          >
+            <span className="text-[17px] font-bold text-zinc-800 tracking-wider">
+              {completedCount}개 피드백 중
+            </span>
+          </div>
 
           <div 
             ref={imageContainerRef}
