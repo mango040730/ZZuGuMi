@@ -39,6 +39,10 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   const [isResetting, setIsResetting] = useState(false)
   const [showExitModal, setShowExitModal] = useState(false)
 
+  // 🔔 쭈템프 획득 상단 알림창 상태 관리
+  const [showStampToast, setShowStampToast] = useState(false)
+  const toastTimerRef = useRef<NodeJS.Timeout | null>(null)
+
   // 📱 3D 터널 모멘텀 감쇠 애니메이션 루프
   useEffect(() => {
     let active = true
@@ -98,6 +102,25 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     }
   }, [isResetting])
 
+  // 🔔 피드백 완료 카운트가 증가할 때마다 쭈템프 적립 체크 (4장당 1개)
+  useEffect(() => {
+    if (currentQueueIndex > 0 && currentQueueIndex % 4 === 0) {
+      // 기존 타이머가 작동 중이면 초기화
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+      
+      setShowStampToast(true)
+      
+      // 3초 후 자동 소멸
+      toastTimerRef.current = setTimeout(() => {
+        setShowStampToast(false)
+      }, 3000)
+    }
+
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    }
+  }, [currentQueueIndex])
+
   // 카드 클릭 시 피드백 진입
   const handleCardClick = (startIndex: number) => {
     const queue = [
@@ -110,6 +133,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     setSwipeOffset(0)
     setSwipeOutDirection(null)
     setShowExitModal(false)
+    setShowStampToast(false)
 
     const hideTutorial = localStorage.getItem("hide_feedback_tutorial_v2")
     if (hideTutorial === "true") {
@@ -155,7 +179,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
   const triggerSwipeOut = (direction: "up" | "down") => {
     setSwipeOutDirection(direction)
-    // 카드가 세로로 기기 화면을 완전히 벗어나도록 큰 값을 부여
     setSwipeOffset(direction === "down" ? 800 : -800)
 
     setTimeout(() => {
@@ -227,7 +250,31 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           )}
         </div>
 
-        {/* 💡 피드백 현황 왼쪽 이동 및 튜토리얼 발생 시 닫기 버튼 비활성화(disabled) 연동 */}
+        {/* 🔔 쭈템프 적립 자동 알림창 오버레이 (디자인 시안 완벽 반영) */}
+        <div 
+          className={`absolute top-16 left-4 right-4 z-50 flex justify-center pointer-events-none transition-all duration-300 ease-out ${
+            showStampToast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
+          }`}
+        >
+          <div className="w-full max-w-[360px] bg-[#FCDFD3] border border-[#F5C2AF] rounded-[24px] p-5 shadow-[0_12px_24px_rgba(234,92,31,0.12)] flex flex-col gap-2 relative">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xl">🎉</span>
+              <h4 className="text-[18px] font-bold text-[#111111]">쭈템프 1개 획득</h4>
+            </div>
+            <div className="text-[15px] font-medium text-[#4D4D4D] leading-tight">
+              <p>대단해요!</p>
+              <p>현재 {completedCount}명의 쭈꾸미에게 피드백을 전달했어요</p>
+            </div>
+            <button 
+              onClick={() => setShowStampToast(false)}
+              className="absolute right-4 top-4 w-6 h-6 flex items-center justify-center rounded-full bg-black/5 pointer-events-auto"
+            >
+              <X className="w-3.5 h-3.5 text-[#8D8D8D]" strokeWidth={2.5} />
+            </button>
+          </div>
+        </div>
+
+        {/* 피드백 현황 및 닫기 버튼 배치 */}
         <div className="px-6 py-5 flex justify-between items-center z-40">
           <span className="text-[17px] font-bold text-zinc-800 tracking-wider">
             {completedCount}개 피드백 중
@@ -371,7 +418,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                  [&::-webkit-scrollbar-thumb]:rounded-full"
       style={{ touchAction: "pan-y" }}
     >
-      {/* 가상 스페이스 레일: 스크롤 컨테이너의 가상 스크롤바 높이를 유연하게 잡아주는 가상 높이 엘리먼트 */}
+      {/* 가상 스페이스 레일 */}
       <div 
         className="w-full pointer-events-none" 
         style={{ height: `${100 + userPosts.length * 45}vh` }} 
@@ -394,7 +441,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           
           const rotateZ = 0
 
-          // 실시간으로 갱신되는 smoothScrollY 수치를 곱해 스크롤할 때 앞으로 돌진하도록 제어합니다.
           const initialZ = -i * 450 
           const currentZ = initialZ + (smoothScrollY * 2.2)
 
@@ -432,7 +478,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                   unoptimized 
                 />
 
-                {/* 시안 형태를 반영한 카드 상단 질문글 반투명 오버레이 */}
                 {post.questionText && (
                   <div className="absolute top-2 left-2 right-2 bg-black/40 backdrop-blur-sm p-2 rounded-lg max-h-[50px] overflow-hidden">
                     <p className="text-[10px] text-white font-semibold leading-tight line-clamp-2">
@@ -441,7 +486,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                   </div>
                 )}
 
-                {/* 최신 포스트 뉴 배지 */}
                 {i === 0 && (
                   <div className="absolute -top-2 -right-3 px-2 py-1 bg-[#FF6200] rounded-sm">
                     <span className="text-[8px] text-white font-medium">NEW</span>
