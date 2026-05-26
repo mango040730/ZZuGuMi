@@ -207,7 +207,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     const nextCardOpacity = Math.min(1, 0.8 + (Math.abs(swipeOffset) / 300) * 0.2)
 
     return (
-      /* 💡 기본 배경 색상을 흰색(bg-white)으로 변경 */
       <div className="fixed inset-0 bg-white z-50 flex flex-col justify-between overflow-hidden">
         
         {/* 그라데이션 오버레이 (사진 뒤에 전체 화면으로 표시) */}
@@ -219,10 +218,10 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
               style={{ opacity: Math.min(1, Math.abs(swipeOffset) / 100) }} 
             />
           )}
-          {/* 카드를 아래로 내릴 때 (쭈따) - 아래쪽에서 올라오는 어두운 그라데이션 (흰 배경에 적합하도록 투명도 조절) */}
+          {/* 💡 카드를 아래로 내릴 때 (쭈따) - 아래쪽에서 올라오는 그라데이션 색상을 다시 검은색(#000000)으로 변경 */}
           {swipeOffset > 20 && (
             <div 
-              className="absolute inset-0 bg-gradient-to-t from-[#000000]/40 via-[#000000]/10 to-transparent transition-opacity" 
+              className="absolute inset-0 bg-gradient-to-t from-[#000000]/80 via-[#000000]/40 to-transparent transition-opacity" 
               style={{ opacity: Math.min(1, swipeOffset / 100) }} 
             />
           )}
@@ -230,7 +229,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
         {/* 피드백 현황 및 닫기 버튼 배치 */}
         <div className="relative h-16 w-full z-40">
-          {/* 💡 흰색 배경 위에서 잘 보이도록 텍스트 색상을 text-zinc-800으로 변경 */}
           <span className="absolute left-1/2 -translate-x-1/2 top-5 text-[17px] font-bold text-zinc-800 tracking-wider">
             {completedCount}개 피드백 중
           </span>
@@ -293,7 +291,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                   </svg>
                 </div>
 
-                {/* 텍스트 설명 */}
+                {/* 텍xt 설명 */}
                 <div className="text-center text-[#EA5C1F] text-[18px] font-bold leading-relaxed mb-8 tracking-tight">
                   <p>쭈업은 위, 쭈따는 아래</p>
                   <p>상하로 화면을 밀어주세요</p>
