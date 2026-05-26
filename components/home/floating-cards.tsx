@@ -267,13 +267,12 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           )}
         </div>
 
-        {/* 🔔 쭈템프 적립 자동 알림창 오버레이 (사진 바깥의 기존 위치에 있으나, 너비는 사진과 동기화됨) */}
+        {/* 🔔 쭈템프 적립 자동 알림창 오버레이 */}
         <div 
           className={`absolute top-16 left-0 w-full z-50 flex justify-center px-4 pointer-events-none transition-all duration-300 ease-out ${
             showStampToast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
           }`}
         >
-          {/* 💡 JS로 측정한 사진 렌더링 컨테이너의 너비(imageWidth)를 직접 주입합니다. */}
           <div 
             className="bg-[#FCDFD3] border border-[#F5C2AF] rounded-[24px] p-5 shadow-[0_12px_24px_rgba(234,92,31,0.12)] flex flex-col gap-2"
             style={{ width: imageWidth ? `${imageWidth}px` : '100%', maxWidth: '100%' }}
@@ -289,15 +288,15 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           </div>
         </div>
 
-        {/* 피드백 현황 및 닫기 버튼 배치 */}
-        <div className="relative h-16 w-full z-40">
-          <span className="absolute left-1/2 -translate-x-1/2 top-5 text-[17px] font-bold text-zinc-800 tracking-wider">
+        {/* 💡 피드백 현황 및 닫기 버튼 배치 (현황 텍스트를 왼쪽으로 이동) */}
+        <div className="px-6 py-5 flex justify-between items-center z-40">
+          <span className="text-[17px] font-bold text-zinc-800 tracking-wider">
             {completedCount}개 피드백 중
           </span>
           <button 
             onClick={handleCloseFeedback} 
             disabled={showTutorial}
-            className={`w-10 h-10 flex items-center justify-center rounded-full hover:bg-zinc-100 transition-colors absolute right-6 top-3 ${
+            className={`w-10 h-10 flex items-center justify-center rounded-full hover:bg-zinc-100 transition-colors ${
               showTutorial ? "opacity-20 cursor-not-allowed" : "opacity-100"
             }`}
           >
@@ -307,7 +306,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
         {/* 📸 사진 렌더링 영역 */}
         <div className="flex-1 w-full px-4 pb-2 min-h-0 flex justify-center items-center relative z-10">
-          {/* 💡 ref={imageContainerRef} 를 여기에 부착하여 실제 그려지는 크기를 측정합니다. */}
           <div 
             ref={imageContainerRef}
             className="relative h-full max-h-[75vh] aspect-[22/29] shrink-0 select-none"
