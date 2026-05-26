@@ -105,7 +105,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   // 🔔 피드백 완료 카운트가 증가할 때마다 쭈템프 적립 체크 (4장당 1개)
   useEffect(() => {
     if (currentQueueIndex > 0 && currentQueueIndex % 4 === 0) {
-      // 기존 타이머가 작동 중이면 초기화
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
       
       setShowStampToast(true)
@@ -241,7 +240,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
               style={{ opacity: Math.min(1, Math.abs(swipeOffset) / 100) }} 
             />
           )}
-          {/* 카드를 아래로 내릴 때 (쭈따) - 아래쪽에서 올라오는 어두운 그라데이션 */}
+          {/* 카드를 아래로 내릴 때 (쭈따) - 아래쪽에서 올라오는 검은색 그라데이션 */}
           {swipeOffset > 20 && (
             <div 
               className="absolute inset-0 bg-gradient-to-t from-[#000000]/80 via-[#000000]/40 to-transparent transition-opacity" 
@@ -250,13 +249,14 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           )}
         </div>
 
-        {/* 🔔 쭈템프 적립 자동 알림창 오버레이 (디자인 시안 완벽 반영) */}
+        {/* 🔔 쭈템프 적립 자동 알림창 오버레이 (너비 사진 카드와 동기화 및 X 버튼 제거) */}
         <div 
           className={`absolute top-16 left-4 right-4 z-50 flex justify-center pointer-events-none transition-all duration-300 ease-out ${
             showStampToast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
           }`}
         >
-          <div className="w-full max-w-[360px] bg-[#FCDFD3] border border-[#F5C2AF] rounded-[24px] p-5 shadow-[0_12px_24px_rgba(234,92,31,0.12)] flex flex-col gap-2 relative">
+          {/* 💡 사진의 전체 가로폭 제안 규격인 max-w-[340px]를 부여하여 일치시킴 */}
+          <div className="w-full max-w-[340px] bg-[#FCDFD3] border border-[#F5C2AF] rounded-[24px] p-5 shadow-[0_12px_24px_rgba(234,92,31,0.12)] flex flex-col gap-2">
             <div className="flex items-center gap-1.5">
               <span className="text-xl">🎉</span>
               <h4 className="text-[18px] font-bold text-[#111111]">쭈템프 1개 획득</h4>
@@ -265,12 +265,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
               <p>대단해요!</p>
               <p>현재 {completedCount}명의 쭈꾸미에게 피드백을 전달했어요</p>
             </div>
-            <button 
-              onClick={() => setShowStampToast(false)}
-              className="absolute right-4 top-4 w-6 h-6 flex items-center justify-center rounded-full bg-black/5 pointer-events-auto"
-            >
-              <X className="w-3.5 h-3.5 text-[#8D8D8D]" strokeWidth={2.5} />
-            </button>
           </div>
         </div>
 
