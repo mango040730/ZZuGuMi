@@ -206,9 +206,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     return (
       <div className="fixed inset-0 bg-white z-50 flex flex-col justify-between overflow-hidden">
         
-        {/* 상단바(시간, 네모박스) 삭제됨 */}
-        
-        {/* 피드백 현황 및 닫기 버튼 배치 수정 */}
+        {/* 피드백 현황 및 닫기 버튼 배치 */}
         <div className="px-6 py-5 flex justify-between items-center z-40">
           <span className="text-[17px] font-bold text-zinc-700 tracking-wider">
             {completedCount}개 피드백 중
@@ -218,7 +216,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           </button>
         </div>
 
-        {/* 📸 사진 크기를 편집 페이지(upload-preview-screen)와 동일하게 수정된 영역 */}
+        {/* 📸 사진 크기를 편집 페이지(upload-preview-screen)와 동일하게 지정 및 라운드 값 24 적용 */}
         <div className="flex-1 w-full px-4 pb-2 min-h-0 flex justify-center items-center relative">
           <div 
             className="relative h-full max-h-[75vh] aspect-[22/29] shrink-0 select-none"
@@ -233,7 +231,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           >
             {nextPost && !showExitModal && (
               <div 
-                className="absolute inset-0 w-full h-full rounded-3xl overflow-hidden bg-white shadow-[0_8px_24px_rgba(0,0,0,0.04)] border border-zinc-200/40 pointer-events-none origin-center"
+                className="absolute inset-0 w-full h-full rounded-[24px] overflow-hidden bg-white shadow-[0_8px_24px_rgba(0,0,0,0.04)] border border-zinc-200/40 pointer-events-none origin-center"
                 style={{
                   transform: `scale(${nextCardScale}) translateY(${(1 - nextCardScale) * 120}px)`,
                   opacity: nextCardOpacity,
@@ -246,7 +244,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             )}
 
             <div
-              className="absolute inset-0 w-full h-full rounded-3xl bg-white shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-zinc-200/40 overflow-hidden"
+              className="absolute inset-0 w-full h-full rounded-[24px] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-zinc-200/40 overflow-hidden"
               style={{
                 transform: `translate3d(${swipeOffset}px, 0, 0) rotate(${swipeOffset * 0.04}deg)`,
                 transition: (isDragging || isResetting) ? "none" : "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
@@ -276,8 +274,8 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           {showTutorial && !showExitModal && (
             <div className="absolute inset-0 bg-[#d6d6d6]/80 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center p-6 select-none">
               
-              {/* 모달 컨테이너 */}
-              <div className="w-full max-w-[320px] bg-[#f7f7f7] rounded-[32px] py-12 px-6 flex flex-col items-center shadow-lg">
+              {/* 모달 컨테이너 (라운드 값 24 적용) */}
+              <div className="w-full max-w-[320px] bg-[#f7f7f7] rounded-[24px] py-12 px-6 flex flex-col items-center shadow-lg">
                 
                 {/* 쭈업 (Thumbs Up) 아이콘 */}
                 <div className="w-12 h-12 mb-8">
@@ -312,12 +310,14 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             </div>
           )}
 
-          {/* 나가기 모달 (Exit Modal) 부분 수정 */}
+          {/* 나가기 모달 (Exit Modal) 부분 (라운드 값 24 적용 및 문구 한 줄 처리) */}
           {showExitModal && (
             <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] z-50 flex items-center justify-center p-6 select-none">
-              <div className="w-full max-w-[320px] bg-white rounded-[40px] px-6 py-10 flex flex-col items-center shadow-2xl">
+              <div className="w-full max-w-[320px] bg-white rounded-[24px] px-6 py-10 flex flex-col items-center shadow-2xl">
                 <h3 className="text-2xl font-black text-[#111111] text-center">쭈템프 {stampsEarned}개 획득</h3>
-                <p className="text-sm font-medium text-zinc-400 mt-3 mb-10 text-center">총 {completedCount}명의 쭈꾸미에게<br />피드백을 전달했어요</p>
+                <p className="text-sm font-medium text-zinc-400 mt-3 mb-10 text-center">
+                  총 {completedCount}명의 쭈꾸미에게 피드백을 전달했어요
+                </p>
                 <div className="flex flex-col gap-3 w-full">
                   <button 
                     onClick={handleContinueFeedback} 
