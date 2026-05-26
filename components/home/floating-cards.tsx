@@ -288,11 +288,8 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           </div>
         </div>
 
-        {/* 💡 피드백 현황 및 닫기 버튼 배치 (현황 텍스트를 왼쪽으로 이동) */}
-        <div className="px-6 py-5 flex justify-between items-center z-40">
-          <span className="text-[17px] font-bold text-zinc-800 tracking-wider">
-            {completedCount}개 피드백 중
-          </span>
+        {/* 💡 최상단 영역 (현황 텍스트 삭제, 닫기 버튼만 우측 배치) */}
+        <div className="relative h-16 w-full z-40 flex justify-end items-center px-6">
           <button 
             onClick={handleCloseFeedback} 
             disabled={showTutorial}
@@ -304,8 +301,14 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           </button>
         </div>
 
-        {/* 📸 사진 렌더링 영역 */}
-        <div className="flex-1 w-full px-4 pb-2 min-h-0 flex justify-center items-center relative z-10">
+        {/* 📸 사진 렌더링 영역 (flex-col로 변경하여 텍스트와 사진 세로 배치) */}
+        <div className="flex-1 w-full px-4 pb-2 min-h-0 flex flex-col justify-center items-center relative z-10">
+          
+          {/* 💡 피드백 현황 텍스트를 최상단에서 여기로 이동, mb-3(12px 간격) 추가 */}
+          <span className="text-[17px] font-bold text-zinc-800 tracking-wider mb-3">
+            {completedCount}개 피드백 중
+          </span>
+
           <div 
             ref={imageContainerRef}
             className="relative h-full max-h-[75vh] aspect-[22/29] shrink-0 select-none"
