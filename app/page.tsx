@@ -2,10 +2,23 @@
 
 import { useState, useEffect } from "react"
 import { Header } from "@/components/home/header"
-import { FloatingCards, type Post } from "@/components/home/floating-cards"
+import { FloatingCards } from "@/components/home/floating-cards"
 import { CameraButton } from "@/components/camera/camera-button"
 import { CameraScreen } from "@/components/home/camera-screen"
 import { UploadPreviewScreen } from "@/components/upload-preview-screen"
+
+export interface PollOption {
+  text: string
+  votes: number
+}
+
+export interface Post {
+  id: string
+  imageData: string
+  questionText: string
+  createdAt: number
+  poll?: PollOption[]
+}
 
 type Screen = "home" | "camera" | "preview"
 
@@ -63,14 +76,17 @@ export default function Home() {
     setCurrentScreen("preview")
   }
   
-  // 3. 업로드할 때 브라우저 저장소에도 함께 저장하기
-  const handleUpload = (questionText: string, mergedImage?: string) => {
+  // 3. 업로드할 때 브라우저 저장소에도 함께 저장하기 (투표 옵션 포함)
+  const handleUpload = (questionText: string, mergedImage?: string, pollOptions?: string[]) => {
     if (capturedImage || mergedImage) {
       const newPost: Post = {
         id: Date.now().toString(),
         imageData: mergedImage || capturedImage || "",
         questionText,
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        poll: pollOptions && pollOptions.length > 0 
+          ? pollOptions.map(text => ({ text, votes: 0 })) 
+          : undefined
       }
       
       setIsTransitioning(true)

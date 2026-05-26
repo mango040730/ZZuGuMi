@@ -1,15 +1,20 @@
-// components/home/floating-cards.tsx
 "use client"
 
 import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import { X } from "lucide-react"
 
+export interface PollOption {
+  text: string
+  votes: number
+}
+
 export interface Post {
   id: string
   imageData: string
   questionText: string
   createdAt: number
+  poll?: PollOption[]
 }
 
 interface FloatingCardsProps {
@@ -44,6 +49,34 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null)
   const imageContainerRef = useRef<HTMLDivElement>(null)
   const [imageWidth, setImageWidth] = useState<number | undefined>(undefined)
+
+  const handleVote = (postId: string, optionIndex: number) => {
+    // 화면에 즉시 반영 (feedbackQueue 업데이트)
+    setFeedbackQueue(prevQueue => {
+      const newQueue = [...prevQueue]
+      const qIdx = newQueue.findIndex(p => p.id === postId)
+      if (qIdx > -1 && newQueue[qIdx].poll) {
+        const updatedPoll = [...newQueue[qIdx].poll!]
+        updatedPoll[optionIndex] = { 
+          ...updatedPoll[optionIndex], 
+          votes: updatedPoll[optionIndex].votes + 1 
+        }
+        newQueue[qIdx] = { ...newQueue[qIdx], poll: updatedPoll }
+      }
+      return newQueue
+    })
+
+    // 로컬스토리지 즉시 업데이트 (새로고침 유지용)
+    const savedPosts = localStorage.getItem("zzuggumi_posts")
+    if (savedPosts) {
+      const parsed = JSON.parse(savedPosts) as Post[]
+      const postIdx = parsed.findIndex(p => p.id === postId)
+      if (postIdx > -1 && parsed[postIdx].poll) {
+        parsed[postIdx].poll![optionIndex].votes += 1
+        localStorage.setItem("zzuggumi_posts", JSON.stringify(parsed))
+      }
+    }
+  }
 
   // 💡 사진 렌더링 컨테이너의 실제 너비를 측정하여 요소들의 너비와 동기화하는 로직
   useEffect(() => {
@@ -351,6 +384,40 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
               }}
             >
               <Image src={activePost.imageData} alt="Current Style" fill className="object-cover pointer-events-none" unoptimized />
+
+              {/* 투표 UI 블록 */}
+              {activePost.poll && activePost.poll.length > 0 && (
+                <div 
+                  className="absolute bottom-5 right-4 z-50 flex flex-col gap-2 w-[160px]" 
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onTouchStart={(e) => e.stopPropagation()}
+                >
+                  {activePost.poll.map((opt, idx) => {
+                    const totalVotes = activePost.poll!.reduce((acc, curr) => acc + curr.votes, 0)
+                    const percentage = totalVotes === 0 ? 0 : Math.round((opt.votes / totalVotes) * 100)
+                    
+                    return (
+                      <button
+                        key={idx}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleVote(activePost.id, idx)
+                        }}
+                        className="relative w-full bg-black/50 backdrop-blur-md border border-white/20 rounded-2xl overflow-hidden p-3 text-left transition-transform active:scale-95 shadow-lg"
+                      >
+                        <div
+                          className="absolute top-0 left-0 bottom-0 bg-[#FF6200]/90 z-0 transition-all duration-500 ease-out"
+                          style={{ width: `${percentage}%` }}
+                        />
+                        <div className="relative z-10 flex justify-between items-center text-white text-sm font-bold">
+                          <span className="truncate pr-2 drop-shadow-md">{opt.text}</span>
+                          <span className="text-[12px] opacity-90 shrink-0 drop-shadow-md">{percentage}%</span>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </div>
 

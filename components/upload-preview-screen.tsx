@@ -3,8 +3,8 @@
 import { useState, useRef, useEffect } from "react"
 import { X, Type, Plus } from "lucide-react"
 
-// 투표 작성 모달 컴포넌트 (디자인 개선 버전)
-const PollModal = ({ onClose }: { onClose: () => void }) => {
+// 투표 작성 모달 컴포넌트
+const PollModal = ({ onClose, onRegister }: { onClose: () => void, onRegister: (options: string[]) => void }) => {
   const [options, setOptions] = useState<string[]>(["", ""]);
 
   const addOption = () => {
@@ -46,7 +46,7 @@ const PollModal = ({ onClose }: { onClose: () => void }) => {
         
         <div className="w-full flex gap-3">
           <button 
-            onClick={onClose} 
+            onClick={() => onRegister(options.filter(opt => opt.trim() !== ""))} 
             className="flex-1 h-[60px] bg-[#FF6200] text-white rounded-[30px] text-[18px] font-bold"
           >
             등록
@@ -65,7 +65,7 @@ const PollModal = ({ onClose }: { onClose: () => void }) => {
 
 interface UploadPreviewScreenProps {
   onClose: () => void
-  onUpload: (questionText: string, mergedImage?: string) => void
+  onUpload: (questionText: string, mergedImage?: string, pollOptions?: string[]) => void
   capturedImage?: string
 }
 
@@ -76,6 +76,7 @@ export function UploadPreviewScreen({
 }: UploadPreviewScreenProps) {
   const [step, setStep] = useState<"text" | "mosaic">("text")
   const [questionText, setQuestionText] = useState("")
+  const [pollOptions, setPollOptions] = useState<string[]>([])
   const [isMosaicMode, setIsMosaicMode] = useState(false)
   const [isPollModalOpen, setIsPollModalOpen] = useState(false)
   const [strokes, setStrokes] = useState<{x: number, y: number}[][]>([])
@@ -104,7 +105,7 @@ export function UploadPreviewScreen({
     if (isUploading) return
 
     if (!capturedImage) {
-      onUpload(questionText, capturedImage)
+      onUpload(questionText, capturedImage, pollOptions)
       return
     }
 
@@ -112,7 +113,7 @@ export function UploadPreviewScreen({
     try {
       const container = containerRef.current
       if (!container) {
-        onUpload(questionText, capturedImage)
+        onUpload(questionText, capturedImage, pollOptions)
         return
       }
 
@@ -136,7 +137,7 @@ export function UploadPreviewScreen({
       canvas.height = outHeight
       const ctx = canvas.getContext("2d")
       if (!ctx) {
-        onUpload(questionText, capturedImage)
+        onUpload(questionText, capturedImage, pollOptions)
         return
       }
 
@@ -233,10 +234,10 @@ export function UploadPreviewScreen({
       }
 
       const mergedImageData = canvas.toDataURL("image/jpeg", 0.9)
-      onUpload(questionText, mergedImageData)
+      onUpload(questionText, mergedImageData, pollOptions)
     } catch (e) {
       console.error(e)
-      onUpload(questionText, capturedImage)
+      onUpload(questionText, capturedImage, pollOptions)
     } finally {
       setIsUploading(false)
     }
@@ -397,7 +398,15 @@ export function UploadPreviewScreen({
         </div>
       </div>
 
-      {isPollModalOpen && <PollModal onClose={() => setIsPollModalOpen(false)} />}
+      {isPollModalOpen && (
+        <PollModal 
+          onClose={() => setIsPollModalOpen(false)} 
+          onRegister={(options) => {
+            setPollOptions(options);
+            setIsPollModalOpen(false);
+          }}
+        />
+      )}
 
       <div className="flex justify-center pt-4 pb-8 px-4 z-50 shrink-0">
         {step === "text" ? (
