@@ -30,11 +30,11 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   const [currentQueueIndex, setCurrentQueueIndex] = useState(0)
   const [showTutorial, setShowTutorial] = useState(true)
 
-  // 🖐️ 스와이프 물리 좌표 및 드래그 상태
-  const [dragStartX, setDragStartX] = useState(0)
+  // 🖐️ 스와이프 물리 좌표 및 드래그 상태 (상하 이동으로 변경)
+  const [dragStartY, setDragStartY] = useState(0)
   const [swipeOffset, setSwipeOffset] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
-  const [swipeOutDirection, setSwipeOutDirection] = useState<"left" | "right" | null>(null)
+  const [swipeOutDirection, setSwipeOutDirection] = useState<"up" | "down" | null>(null)
 
   const [isResetting, setIsResetting] = useState(false)
   const [showExitModal, setShowExitModal] = useState(false)
@@ -126,15 +126,16 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     setShowTutorial(false)
   }
 
-  const handleSwipeStart = (clientX: number) => {
+  // 상하 스와이프 핸들러로 변경 (clientY 사용)
+  const handleSwipeStart = (clientY: number) => {
     if (showTutorial || showExitModal) return
     setIsDragging(true)
-    setDragStartX(clientX)
+    setDragStartY(clientY)
   }
 
-  const handleSwipeMove = (clientX: number) => {
+  const handleSwipeMove = (clientY: number) => {
     if (!isDragging || showTutorial || showExitModal) return
-    const currentOffset = clientX - dragStartX
+    const currentOffset = clientY - dragStartY
     setSwipeOffset(currentOffset)
   }
 
@@ -142,18 +143,20 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     if (!isDragging) return
     setIsDragging(false)
 
-    if (swipeOffset > 110) {
-      triggerSwipeOut("right")
-    } else if (swipeOffset < -110) {
-      triggerSwipeOut("left")
+    // 임계값 초과 시 카드 날리기 (상하)
+    if (swipeOffset > 130) {
+      triggerSwipeOut("down")
+    } else if (swipeOffset < -130) {
+      triggerSwipeOut("up")
     } else {
-      setSwipeOffset(0)
+      setSwipeOffset(0) // 원위치
     }
   }
 
-  const triggerSwipeOut = (direction: "left" | "right") => {
+  const triggerSwipeOut = (direction: "up" | "down") => {
     setSwipeOutDirection(direction)
-    setSwipeOffset(direction === "right" ? 500 : -500)
+    // 카드가 세로로 기기 화면을 완전히 벗어나도록 큰 값을 부여
+    setSwipeOffset(direction === "down" ? 800 : -800)
 
     setTimeout(() => {
       const nextIndex = currentQueueIndex + 1
@@ -200,8 +203,8 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     const completedCount = currentQueueIndex
     const stampsEarned = Math.floor(completedCount / 4)
 
-    const nextCardScale = Math.min(1, 0.95 + (Math.abs(swipeOffset) / 200) * 0.05)
-    const nextCardOpacity = Math.min(1, 0.8 + (Math.abs(swipeOffset) / 200) * 0.2)
+    const nextCardScale = Math.min(1, 0.95 + (Math.abs(swipeOffset) / 300) * 0.05)
+    const nextCardOpacity = Math.min(1, 0.8 + (Math.abs(swipeOffset) / 300) * 0.2)
 
     return (
       <div className="fixed inset-0 bg-white z-50 flex flex-col justify-between overflow-hidden">
@@ -221,12 +224,12 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           <div 
             className="relative h-full max-h-[75vh] aspect-[22/29] shrink-0 select-none"
             style={{ touchAction: "none" }}
-            onMouseDown={(e) => handleSwipeStart(e.clientX)}
-            onMouseMove={(e) => handleSwipeMove(e.clientX)}
+            onMouseDown={(e) => handleSwipeStart(e.clientY)} // 상하 드래그 (clientY)
+            onMouseMove={(e) => handleSwipeMove(e.clientY)}
             onMouseUp={handleSwipeEnd}
             onMouseLeave={handleSwipeEnd}
-            onTouchStart={(e) => handleSwipeStart(e.touches[0].clientX)}
-            onTouchMove={(e) => handleSwipeMove(e.touches[0].clientX)}
+            onTouchStart={(e) => handleSwipeStart(e.touches[0].clientY)} // 상하 드래그 (clientY)
+            onTouchMove={(e) => handleSwipeMove(e.touches[0].clientY)}
             onTouchEnd={handleSwipeEnd}
           >
             {nextPost && !showExitModal && (
@@ -246,7 +249,8 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             <div
               className="absolute inset-0 w-full h-full rounded-[24px] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-zinc-200/40 overflow-hidden"
               style={{
-                transform: `translate3d(${swipeOffset}px, 0, 0) rotate(${swipeOffset * 0.04}deg)`,
+                // 좌우 이동 대신 상하(Y축)로 이동하도록 수정
+                transform: `translate3d(0, ${swipeOffset}px, 0) rotate(${swipeOffset * -0.015}deg)`,
                 transition: (isDragging || isResetting) ? "none" : "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
                 willChange: "transform",
                 zIndex: 10
@@ -254,15 +258,17 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             >
               <Image src={activePost.imageData} alt="Current Style" fill className="object-cover pointer-events-none" unoptimized />
 
-              {swipeOffset > 20 && (
-                <div className="absolute inset-0 bg-emerald-500/10 flex items-center justify-center pointer-events-none transition-opacity" style={{ opacity: Math.min(0.8, swipeOffset / 100) }}>
+              {/* 카드를 위로 올릴 때 (쭈업, ThumbsUp) - swipeOffset이 마이너스 값이 됨 */}
+              {swipeOffset < -20 && (
+                <div className="absolute inset-0 bg-emerald-500/10 flex items-center justify-center pointer-events-none transition-opacity" style={{ opacity: Math.min(0.8, Math.abs(swipeOffset) / 100) }}>
                   <div className="bg-white/90 p-5 rounded-full shadow-lg transform scale-110">
                     <ThumbsUp className="w-12 h-12 text-emerald-500 fill-emerald-500" />
                   </div>
                 </div>
               )}
-              {swipeOffset < -20 && (
-                <div className="absolute inset-0 bg-rose-500/10 flex items-center justify-center pointer-events-none transition-opacity" style={{ opacity: Math.min(0.8, Math.abs(swipeOffset) / 100) }}>
+              {/* 카드를 아래로 내릴 때 (쭈따, ThumbsDown) - swipeOffset이 플러스 값이 됨 */}
+              {swipeOffset > 20 && (
+                <div className="absolute inset-0 bg-rose-500/10 flex items-center justify-center pointer-events-none transition-opacity" style={{ opacity: Math.min(0.8, swipeOffset / 100) }}>
                   <div className="bg-white/90 p-5 rounded-full shadow-lg transform scale-110">
                     <ThumbsDown className="w-12 h-12 text-rose-500 fill-rose-500" />
                   </div>
