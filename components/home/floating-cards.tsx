@@ -39,9 +39,29 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   const [isResetting, setIsResetting] = useState(false)
   const [showExitModal, setShowExitModal] = useState(false)
 
-  // 🔔 쭈템프 획득 상단 알림창 상태 관리
+  // 🔔 쭈템프 획득 상단 알림창 상태 관리 및 너비 동기화
   const [showStampToast, setShowStampToast] = useState(false)
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const imageContainerRef = useRef<HTMLDivElement>(null)
+  const [imageWidth, setImageWidth] = useState<number | undefined>(undefined)
+
+  // 💡 사진 렌더링 컨테이너의 실제 너비를 측정하여 토스트 너비와 동기화하는 로직
+  useEffect(() => {
+    const container = imageContainerRef.current
+    if (!container || !selectedPost) return
+
+    const updateWidth = () => {
+      setImageWidth(container.offsetWidth)
+    }
+
+    updateWidth() // 최초 측정
+
+    // 화면 크기가 변할 때도 실시간으로 너비 동기화
+    const observer = new ResizeObserver(updateWidth)
+    observer.observe(container)
+
+    return () => observer.disconnect()
+  }, [selectedPost])
 
   // 📱 3D 터널 모멘텀 감쇠 애니메이션 루프
   useEffect(() => {
@@ -231,16 +251,14 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     return (
       <div className="fixed inset-0 bg-white z-50 flex flex-col justify-between overflow-hidden">
         
-        {/* 그라데이션 오버레이 (사진 뒤에 전체 화면으로 표시) */}
+        {/* 그라데이션 오버레이 */}
         <div className="absolute inset-0 z-0 pointer-events-none">
-          {/* 카드를 위로 올릴 때 (쭈업) - 위쪽에서 떨어지는 주황색 그라데이션 */}
           {swipeOffset < -20 && (
             <div 
               className="absolute inset-0 bg-gradient-to-b from-[#FF6200]/60 via-[#FF6200]/20 to-transparent transition-opacity" 
               style={{ opacity: Math.min(1, Math.abs(swipeOffset) / 100) }} 
             />
           )}
-          {/* 카드를 아래로 내릴 때 (쭈따) - 아래쪽에서 올라오는 검은색 그라데이션 */}
           {swipeOffset > 20 && (
             <div 
               className="absolute inset-0 bg-gradient-to-t from-[#000000]/80 via-[#000000]/40 to-transparent transition-opacity" 
@@ -249,14 +267,17 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           )}
         </div>
 
-        {/* 🔔 쭈템프 적립 자동 알림창 오버레이 (너비 사진 카드와 동기화 및 X 버튼 제거) */}
+        {/* 🔔 쭈템프 적립 자동 알림창 오버레이 (사진 바깥의 기존 위치에 있으나, 너비는 사진과 동기화됨) */}
         <div 
-          className={`absolute top-16 left-4 right-4 z-50 flex justify-center pointer-events-none transition-all duration-300 ease-out ${
+          className={`absolute top-16 left-0 w-full z-50 flex justify-center px-4 pointer-events-none transition-all duration-300 ease-out ${
             showStampToast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
           }`}
         >
-          {/* 💡 사진의 전체 가로폭 제안 규격인 max-w-[340px]를 부여하여 일치시킴 */}
-          <div className="w-full max-w-[340px] bg-[#FCDFD3] border border-[#F5C2AF] rounded-[24px] p-5 shadow-[0_12px_24px_rgba(234,92,31,0.12)] flex flex-col gap-2">
+          {/* 💡 JS로 측정한 사진 렌더링 컨테이너의 너비(imageWidth)를 직접 주입합니다. */}
+          <div 
+            className="bg-[#FCDFD3] border border-[#F5C2AF] rounded-[24px] p-5 shadow-[0_12px_24px_rgba(234,92,31,0.12)] flex flex-col gap-2"
+            style={{ width: imageWidth ? `${imageWidth}px` : '100%', maxWidth: '100%' }}
+          >
             <div className="flex items-center gap-1.5">
               <span className="text-xl">🎉</span>
               <h4 className="text-[18px] font-bold text-[#111111]">쭈템프 1개 획득</h4>
@@ -269,14 +290,14 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
         </div>
 
         {/* 피드백 현황 및 닫기 버튼 배치 */}
-        <div className="px-6 py-5 flex justify-between items-center z-40">
-          <span className="text-[17px] font-bold text-zinc-800 tracking-wider">
+        <div className="relative h-16 w-full z-40">
+          <span className="absolute left-1/2 -translate-x-1/2 top-5 text-[17px] font-bold text-zinc-800 tracking-wider">
             {completedCount}개 피드백 중
           </span>
           <button 
             onClick={handleCloseFeedback} 
             disabled={showTutorial}
-            className={`w-10 h-10 flex items-center justify-center rounded-full hover:bg-zinc-100 transition-colors ${
+            className={`w-10 h-10 flex items-center justify-center rounded-full hover:bg-zinc-100 transition-colors absolute right-6 top-3 ${
               showTutorial ? "opacity-20 cursor-not-allowed" : "opacity-100"
             }`}
           >
@@ -284,9 +305,11 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           </button>
         </div>
 
-        {/* 📸 사진 크기를 편집 페이지와 동일하게 지정 및 라운드 값 24 적용 */}
+        {/* 📸 사진 렌더링 영역 */}
         <div className="flex-1 w-full px-4 pb-2 min-h-0 flex justify-center items-center relative z-10">
+          {/* 💡 ref={imageContainerRef} 를 여기에 부착하여 실제 그려지는 크기를 측정합니다. */}
           <div 
+            ref={imageContainerRef}
             className="relative h-full max-h-[75vh] aspect-[22/29] shrink-0 select-none"
             style={{ touchAction: "none" }}
             onMouseDown={(e) => handleSwipeStart(e.clientY)} 
@@ -328,23 +351,19 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           {showTutorial && !showExitModal && (
             <div className="absolute inset-0 bg-[#d6d6d6]/80 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center p-6 select-none">
               
-              {/* 모달 컨테이너 (라운드 값 24 적용) */}
               <div className="w-full max-w-[320px] bg-[#f7f7f7] rounded-[24px] py-12 px-6 flex flex-col items-center shadow-lg">
                 
-                {/* 쭈업 (Thumbs Up) 아이콘 */}
                 <div className="w-12 h-12 mb-8">
                   <svg viewBox="0 0 24 24" className="w-full h-full fill-none stroke-[#EA5C1F]" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
                   </svg>
                 </div>
 
-                {/* 텍스트 설명 */}
                 <div className="text-center text-[#EA5C1F] text-[18px] font-bold leading-relaxed mb-8 tracking-tight">
                   <p>쭈업은 위, 쭈따는 아래</p>
                   <p>상하로 화면을 밀어주세요</p>
                 </div>
 
-                {/* 쭈따 (Thumbs Down) 아이콘 */}
                 <div className="w-12 h-12">
                   <svg viewBox="0 0 24 24" className="w-full h-full fill-none stroke-[#EA5C1F]" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path>
@@ -353,7 +372,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 
               </div>
 
-              {/* 하단 닫기 버튼 */}
               <button 
                 onClick={handleConfirmTutorial}
                 className="mt-10 w-12 h-12 rounded-full border-[3px] border-white bg-transparent flex items-center justify-center transition-transform active:scale-95"
@@ -364,7 +382,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             </div>
           )}
 
-          {/* 나가기 모달 (Exit Modal) 부분 */}
           {showExitModal && (
             <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] z-50 flex items-center justify-center p-6 select-none">
               <div className="w-full max-w-[320px] bg-white rounded-[24px] px-6 py-10 flex flex-col items-center shadow-2xl">
@@ -391,7 +408,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           )}
         </div>
 
-        {/* 하단 홈 인디케이터 영역 배경바 색상 조정 */}
         <div className="h-8 w-full flex justify-center items-center select-none pb-2">
           <div className="w-36 h-1 bg-zinc-300 rounded-full" />
         </div>
@@ -412,13 +428,11 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                  [&::-webkit-scrollbar-thumb]:rounded-full"
       style={{ touchAction: "pan-y" }}
     >
-      {/* 가상 스페이스 레일 */}
       <div 
         className="w-full pointer-events-none" 
         style={{ height: `${100 + userPosts.length * 45}vh` }} 
       />
 
-      {/* 고정 3D 시점 카메라 프레임 */}
       <div 
         className="sticky inset-y-0 left-0 w-full h-[calc(100vh-80px)] pointer-events-none flex items-center justify-center"
         style={{ 
