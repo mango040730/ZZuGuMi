@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
-import { X, ThumbsUp, ThumbsDown } from "lucide-react"
+import { X } from "lucide-react"
 
 export interface Post {
   id: string
@@ -207,28 +207,46 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     const nextCardOpacity = Math.min(1, 0.8 + (Math.abs(swipeOffset) / 300) * 0.2)
 
     return (
-      <div className="fixed inset-0 bg-white z-50 flex flex-col justify-between overflow-hidden">
+      <div className="fixed inset-0 bg-black z-50 flex flex-col justify-between overflow-hidden">
         
+        {/* 그라데이션 오버레이 (사진 뒤에 전체 화면으로 표시) */}
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          {/* 카드를 위로 올릴 때 (쭈업) - 위쪽에서 떨어지는 주황색 그라데이션 */}
+          {swipeOffset < -20 && (
+            <div 
+              className="absolute inset-0 bg-gradient-to-b from-[#FF6200] via-[#FF6200]/40 to-transparent transition-opacity" 
+              style={{ opacity: Math.min(0.8, Math.abs(swipeOffset) / 100) }} 
+            />
+          )}
+          {/* 카드를 아래로 내릴 때 (쭈따) - 아래쪽에서 올라오는 검은색 그라데이션 */}
+          {swipeOffset > 20 && (
+            <div 
+              className="absolute inset-0 bg-gradient-to-t from-[#000000] via-[#000000]/40 to-transparent transition-opacity" 
+              style={{ opacity: Math.min(0.8, swipeOffset / 100) }} 
+            />
+          )}
+        </div>
+
         {/* 피드백 현황 및 닫기 버튼 배치 */}
-        <div className="px-6 py-5 flex justify-between items-center z-40">
-          <span className="text-[17px] font-bold text-zinc-700 tracking-wider">
+        <div className="relative h-16 w-full z-40">
+          <span className="absolute left-1/2 -translate-x-1/2 top-5 text-[17px] font-bold text-white tracking-wider">
             {completedCount}개 피드백 중
           </span>
-          <button onClick={handleCloseFeedback} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-zinc-100 transition-colors">
-            <X className="w-6 h-6 text-black" strokeWidth={1.5} />
+          <button onClick={handleCloseFeedback} className="absolute right-6 top-3 w-10 h-10 flex items-center justify-center rounded-full hover:bg-zinc-100/10 transition-colors">
+            <X className="w-6 h-6 text-white" strokeWidth={1.5} />
           </button>
         </div>
 
         {/* 📸 사진 크기를 편집 페이지와 동일하게 지정 및 라운드 값 24 적용 */}
-        <div className="flex-1 w-full px-4 pb-2 min-h-0 flex justify-center items-center relative">
+        <div className="flex-1 w-full px-4 pb-2 min-h-0 flex justify-center items-center relative z-10">
           <div 
             className="relative h-full max-h-[75vh] aspect-[22/29] shrink-0 select-none"
             style={{ touchAction: "none" }}
-            onMouseDown={(e) => handleSwipeStart(e.clientY)} // 상하 드래그 (clientY)
+            onMouseDown={(e) => handleSwipeStart(e.clientY)} 
             onMouseMove={(e) => handleSwipeMove(e.clientY)}
             onMouseUp={handleSwipeEnd}
             onMouseLeave={handleSwipeEnd}
-            onTouchStart={(e) => handleSwipeStart(e.touches[0].clientY)} // 상하 드래그 (clientY)
+            onTouchStart={(e) => handleSwipeStart(e.touches[0].clientY)} 
             onTouchMove={(e) => handleSwipeMove(e.touches[0].clientY)}
             onTouchEnd={handleSwipeEnd}
           >
@@ -249,29 +267,14 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             <div
               className="absolute inset-0 w-full h-full rounded-[24px] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-zinc-200/40 overflow-hidden"
               style={{
-                // 좌우 이동 대신 상하(Y축)로 이동하도록 수정
-                transform: `translate3d(0, ${swipeOffset}px, 0) rotate(${swipeOffset * -0.015}deg)`,
+                // 카드가 수직(Y축)으로만 일직선 이동
+                transform: `translate3d(0, ${swipeOffset}px, 0)`,
                 transition: (isDragging || isResetting) ? "none" : "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
                 willChange: "transform",
                 zIndex: 10
               }}
             >
               <Image src={activePost.imageData} alt="Current Style" fill className="object-cover pointer-events-none" unoptimized />
-
-              {/* 카드를 위로 올릴 때 (쭈업) - 위쪽에서 떨어지는 주황색 그라데이션 */}
-              {swipeOffset < -20 && (
-                <div 
-                  className="absolute inset-0 bg-gradient-to-b from-[#FF6200] via-[#FF6200]/40 to-transparent pointer-events-none transition-opacity" 
-                  style={{ opacity: Math.min(0.8, Math.abs(swipeOffset) / 100) }} 
-                />
-              )}
-              {/* 카드를 아래로 내릴 때 (쭈따) - 아래쪽에서 올라오는 검은색 그라데이션 */}
-              {swipeOffset > 20 && (
-                <div 
-                  className="absolute inset-0 bg-gradient-to-t from-[#000000] via-[#000000]/40 to-transparent pointer-events-none transition-opacity" 
-                  style={{ opacity: Math.min(0.8, swipeOffset / 100) }} 
-                />
-              )}
             </div>
           </div>
 
@@ -314,7 +317,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             </div>
           )}
 
-          {/* 나가기 모달 (Exit Modal) 부분 (라운드 값 24 적용 및 문구 한 줄 처리) */}
+          {/* 나가기 모달 (Exit Modal) 부분 (오류 수정됨) */}
           {showExitModal && (
             <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] z-50 flex items-center justify-center p-6 select-none">
               <div className="w-full max-w-[320px] bg-white rounded-[24px] px-6 py-10 flex flex-col items-center shadow-2xl">
@@ -325,13 +328,13 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 <div className="flex flex-col gap-3 w-full">
                   <button 
                     onClick={handleContinueFeedback} 
-                    className="w-full py-4 bg-[#FF6200] text-white rounded-full font-bold text-sm text-center"
+                    className="w-full py-4 bg-[#FF6200] text-white rounded-full font-bold text-sm text-center transition-transform active:scale-95"
                   >
                     계속 진행 하기
                   </button>
                   <button 
                     onClick={handleExitFeedback} 
-                    className="w-full py-4 bg-[#FFFFFF] border-[2px] border-[#9D9D9D] text-[#111111] rounded-full font-bold text-sm text-center"
+                    className="w-full py-4 bg-[#FFFFFF] border-[2px] border-[#9D9D9D] text-[#111111] rounded-full font-bold text-sm text-center transition-transform active:scale-95"
                   >
                     나가기
                   </button>
@@ -342,7 +345,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
         </div>
 
         <div className="h-8 w-full flex justify-center items-center select-none pb-2">
-          <div className="w-36 h-1 bg-black rounded-full" />
+          <div className="w-36 h-1 bg-white rounded-full" />
         </div>
       </div>
     )
