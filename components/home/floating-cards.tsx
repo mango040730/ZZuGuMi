@@ -207,33 +207,35 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     const nextCardOpacity = Math.min(1, 0.8 + (Math.abs(swipeOffset) / 300) * 0.2)
 
     return (
-      <div className="fixed inset-0 bg-black z-50 flex flex-col justify-between overflow-hidden">
+      /* 💡 기본 배경 색상을 흰색(bg-white)으로 변경 */
+      <div className="fixed inset-0 bg-white z-50 flex flex-col justify-between overflow-hidden">
         
         {/* 그라데이션 오버레이 (사진 뒤에 전체 화면으로 표시) */}
         <div className="absolute inset-0 z-0 pointer-events-none">
           {/* 카드를 위로 올릴 때 (쭈업) - 위쪽에서 떨어지는 주황색 그라데이션 */}
           {swipeOffset < -20 && (
             <div 
-              className="absolute inset-0 bg-gradient-to-b from-[#FF6200] via-[#FF6200]/40 to-transparent transition-opacity" 
-              style={{ opacity: Math.min(0.8, Math.abs(swipeOffset) / 100) }} 
+              className="absolute inset-0 bg-gradient-to-b from-[#FF6200]/60 via-[#FF6200]/20 to-transparent transition-opacity" 
+              style={{ opacity: Math.min(1, Math.abs(swipeOffset) / 100) }} 
             />
           )}
-          {/* 카드를 아래로 내릴 때 (쭈따) - 아래쪽에서 올라오는 검은색 그라데이션 */}
+          {/* 카드를 아래로 내릴 때 (쭈따) - 아래쪽에서 올라오는 어두운 그라데이션 (흰 배경에 적합하도록 투명도 조절) */}
           {swipeOffset > 20 && (
             <div 
-              className="absolute inset-0 bg-gradient-to-t from-[#000000] via-[#000000]/40 to-transparent transition-opacity" 
-              style={{ opacity: Math.min(0.8, swipeOffset / 100) }} 
+              className="absolute inset-0 bg-gradient-to-t from-[#000000]/40 via-[#000000]/10 to-transparent transition-opacity" 
+              style={{ opacity: Math.min(1, swipeOffset / 100) }} 
             />
           )}
         </div>
 
         {/* 피드백 현황 및 닫기 버튼 배치 */}
         <div className="relative h-16 w-full z-40">
-          <span className="absolute left-1/2 -translate-x-1/2 top-5 text-[17px] font-bold text-white tracking-wider">
+          {/* 💡 흰색 배경 위에서 잘 보이도록 텍스트 색상을 text-zinc-800으로 변경 */}
+          <span className="absolute left-1/2 -translate-x-1/2 top-5 text-[17px] font-bold text-zinc-800 tracking-wider">
             {completedCount}개 피드백 중
           </span>
-          <button onClick={handleCloseFeedback} className="absolute right-6 top-3 w-10 h-10 flex items-center justify-center rounded-full hover:bg-zinc-100/10 transition-colors">
-            <X className="w-6 h-6 text-white" strokeWidth={1.5} />
+          <button onClick={handleCloseFeedback} className="absolute right-6 top-3 w-10 h-10 flex items-center justify-center rounded-full hover:bg-zinc-100 transition-colors">
+            <X className="w-6 h-6 text-black" strokeWidth={1.5} />
           </button>
         </div>
 
@@ -317,7 +319,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             </div>
           )}
 
-          {/* 나가기 모달 (Exit Modal) 부분 (오류 수정됨) */}
+          {/* 나가기 모달 (Exit Modal) 부분 */}
           {showExitModal && (
             <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] z-50 flex items-center justify-center p-6 select-none">
               <div className="w-full max-w-[320px] bg-white rounded-[24px] px-6 py-10 flex flex-col items-center shadow-2xl">
@@ -344,8 +346,9 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           )}
         </div>
 
+        {/* 하단 홈 인디케이터 영역 배경바 색상 조정 */}
         <div className="h-8 w-full flex justify-center items-center select-none pb-2">
-          <div className="w-36 h-1 bg-white rounded-full" />
+          <div className="w-36 h-1 bg-zinc-300 rounded-full" />
         </div>
       </div>
     )
