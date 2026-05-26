@@ -275,25 +275,41 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           </div>
 
           {showTutorial && !showExitModal && (
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col justify-between p-8 text-white select-none">
-              <div />
-              <div className="flex flex-col items-center justify-center my-auto">
-                <div className="flex items-center justify-center gap-7">
-                  <ThumbsDown className="w-11 h-11 text-white" strokeWidth={1.5} />
-                  <div className="flex items-center gap-1 text-white/80">
-                    <span className="text-xl font-light">←</span>
-                    <span className="h-[2px] w-20 bg-white block" />
-                    <span className="text-xl font-light">→</span>
-                  </div>
-                  <ThumbsUp className="w-11 h-11 text-white" strokeWidth={1.5} />
+            <div className="absolute inset-0 bg-[#d6d6d6]/80 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center p-6 select-none">
+              
+              {/* 모달 컨테이너 */}
+              <div className="w-full max-w-[320px] bg-[#f7f7f7] rounded-[32px] py-12 px-6 flex flex-col items-center shadow-lg">
+                
+                {/* 쭈업 (Thumbs Up) 아이콘 */}
+                <div className="w-12 h-12 mb-8">
+                  <svg viewBox="0 0 24 24" className="w-full h-full fill-none stroke-[#EA5C1F]" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                  </svg>
                 </div>
-                <h2 className="text-2xl font-bold mt-8 text-center tracking-wide">**쭈업은 오른쪽, 쭈따는 왼쪽**</h2>
-                <p className="text-sm text-zinc-300 mt-2 text-center">좌우로 화면을 밀어봐요</p>
+
+                {/* 텍스트 설명 */}
+                <div className="text-center text-[#EA5C1F] text-[18px] font-bold leading-relaxed mb-8 tracking-tight">
+                  <p>쭈업은 위, 쭈따는 아래</p>
+                  <p>상하로 화면을 밀어주세요</p>
+                </div>
+
+                {/* 쭈따 (Thumbs Down) 아이콘 */}
+                <div className="w-12 h-12">
+                  <svg viewBox="0 0 24 24" className="w-full h-full fill-none stroke-[#EA5C1F]" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path>
+                  </svg>
+                </div>
+                
               </div>
-              <div className="flex flex-col gap-3 w-full max-w-[320px] mx-auto pb-4">
-                <button onClick={handleConfirmTutorial} className="w-full py-4 bg-[#545454] text-white rounded-xl font-bold text-center">확인</button>
-                <button onClick={handleHideTutorialForever} className="w-full py-4 bg-white text-black rounded-xl font-bold text-center shadow-lg">더이상 보지 않기</button>
-              </div>
+
+              {/* 하단 닫기 버튼 */}
+              <button 
+                onClick={handleConfirmTutorial}
+                className="mt-10 w-12 h-12 rounded-full border-[3px] border-white bg-transparent flex items-center justify-center transition-transform active:scale-95"
+                aria-label="닫기"
+              >
+                <X className="w-7 h-7 text-white" strokeWidth={3} />
+              </button>
             </div>
           )}
 
