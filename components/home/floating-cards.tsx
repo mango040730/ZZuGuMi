@@ -192,7 +192,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   }
 
   // -------------------------------------------------------------
-  // 📱 [1] 스와이프 피드백 모드 레이아웃 (생략 없음)
+  // 📱 [1] 스와이프 피드백 모드 레이아웃
   // -------------------------------------------------------------
   if (selectedPost) {
     const activePost = currentQueueIndex < feedbackQueue.length ? feedbackQueue[currentQueueIndex] : feedbackQueue[feedbackQueue.length - 1]
@@ -205,19 +205,17 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
     return (
       <div className="fixed inset-0 bg-white z-50 flex flex-col justify-between overflow-hidden">
-        <div className="px-6 pt-3 pb-1 flex justify-between items-center text-xs font-bold text-black select-none">
-          <span>9:41</span>
-          <div className="flex items-center gap-1.5">
-            <span className="w-4 h-3 bg-black rounded-sm block" />
-            <span className="w-3.5 h-3 bg-black rounded-sm block" />
-          </div>
-        </div>
-
-        <div className="px-5 py-3 flex justify-between items-center z-40">
+        
+        {/* 상단바(시간, 네모박스) 삭제됨 */}
+        
+        {/* 피드백 현황 및 닫기 버튼 배치 수정 */}
+        <div className="px-6 py-5 flex justify-between items-center z-40">
+          <span className="text-[17px] font-bold text-zinc-700 tracking-wider">
+            {completedCount}개 피드백 중
+          </span>
           <button onClick={handleCloseFeedback} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-zinc-100 transition-colors">
             <X className="w-6 h-6 text-black" strokeWidth={1.5} />
           </button>
-          <span className="text-[17px] font-bold text-zinc-700 tracking-wider">{completedCount}</span>
         </div>
 
         {/* 📸 사진 크기를 편집 페이지(upload-preview-screen)와 동일하게 수정된 영역 */}
