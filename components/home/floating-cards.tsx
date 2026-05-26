@@ -220,9 +220,10 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           <span className="text-[17px] font-bold text-zinc-700 tracking-wider">{completedCount}</span>
         </div>
 
-        <div className="flex-1 flex items-center justify-center px-6 relative">
+        {/* 📸 사진 크기를 편집 페이지(upload-preview-screen)와 동일하게 수정된 영역 */}
+        <div className="flex-1 w-full px-4 pb-2 min-h-0 flex justify-center items-center relative">
           <div 
-            className="relative w-full max-w-[340px] aspect-[3/4] select-none"
+            className="relative h-full max-h-[75vh] aspect-[22/29] shrink-0 select-none"
             style={{ touchAction: "none" }}
             onMouseDown={(e) => handleSwipeStart(e.clientX)}
             onMouseMove={(e) => handleSwipeMove(e.clientX)}
@@ -234,7 +235,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           >
             {nextPost && !showExitModal && (
               <div 
-                className="absolute inset-0 w-full h-full rounded-[12px] overflow-hidden bg-white shadow-[0_8px_24px_rgba(0,0,0,0.04)] border border-zinc-200/40 pointer-events-none origin-center"
+                className="absolute inset-0 w-full h-full rounded-3xl overflow-hidden bg-white shadow-[0_8px_24px_rgba(0,0,0,0.04)] border border-zinc-200/40 pointer-events-none origin-center"
                 style={{
                   transform: `scale(${nextCardScale}) translateY(${(1 - nextCardScale) * 120}px)`,
                   opacity: nextCardOpacity,
@@ -247,7 +248,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             )}
 
             <div
-              className="absolute inset-0 w-full h-full rounded-[12px] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-zinc-200/40 overflow-hidden"
+              className="absolute inset-0 w-full h-full rounded-3xl bg-white shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-zinc-200/40 overflow-hidden"
               style={{
                 transform: `translate3d(${swipeOffset}px, 0, 0) rotate(${swipeOffset * 0.04}deg)`,
                 transition: (isDragging || isResetting) ? "none" : "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
@@ -368,7 +369,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           const translateX = Math.cos(angle) * tunnelRadius
           const translateY = Math.sin(angle) * tunnelRadius
           
-          // 💡 [수정] 비스듬히 누워있던 경사각 효과를 0으로 고정했습니다.
           const rotateZ = 0
 
           // 실시간으로 갱신되는 smoothScrollY 수치를 곱해 스크롤할 때 앞으로 돌진하도록 제어합니다.
@@ -400,7 +400,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 backfaceVisibility: "hidden"
               }}
             >
-              {/* 💡 [수정] 기존 rounded-[12px] 모서리를 시안 가이드라인을 위해 rounded-none(직각)으로 변경했습니다. */}
               <div className="relative w-full h-full bg-white rounded-none overflow-hidden shadow-[0_12px_32px_rgba(0,0,0,0.06)] border border-zinc-200/40">
                 <Image 
                   src={post.imageData} 
@@ -419,7 +418,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                   </div>
                 )}
 
-                {/* 최신 포스트 뉴 배지 (주황색 테마 컬러 지정) */}
+                {/* 최신 포스트 뉴 배지 */}
                 {i === 0 && (
                   <div className="absolute -top-2 -right-3 px-2 py-1 bg-[#FF6200] rounded-sm">
                     <span className="text-[8px] text-white font-medium">NEW</span>
