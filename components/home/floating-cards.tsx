@@ -30,7 +30,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   const [currentQueueIndex, setCurrentQueueIndex] = useState(0)
   const [showTutorial, setShowTutorial] = useState(true)
 
-  // 🖐️ 스와이프 물리 좌표 및 드래그 상태 (상하 이동으로 변경)
+  // 🖐️ 스와이프 물리 좌표 및 드래그 상태 (상하 이동)
   const [dragStartY, setDragStartY] = useState(0)
   const [swipeOffset, setSwipeOffset] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
@@ -126,7 +126,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     setShowTutorial(false)
   }
 
-  // 상하 스와이프 핸들러로 변경 (clientY 사용)
+  // 상하 스와이프 핸들러 (clientY 사용)
   const handleSwipeStart = (clientY: number) => {
     if (showTutorial || showExitModal) return
     setIsDragging(true)
@@ -219,7 +219,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           </button>
         </div>
 
-        {/* 📸 사진 크기를 편집 페이지(upload-preview-screen)와 동일하게 지정 및 라운드 값 24 적용 */}
+        {/* 📸 사진 크기를 편집 페이지와 동일하게 지정 및 라운드 값 24 적용 */}
         <div className="flex-1 w-full px-4 pb-2 min-h-0 flex justify-center items-center relative">
           <div 
             className="relative h-full max-h-[75vh] aspect-[22/29] shrink-0 select-none"
@@ -258,21 +258,19 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             >
               <Image src={activePost.imageData} alt="Current Style" fill className="object-cover pointer-events-none" unoptimized />
 
-              {/* 카드를 위로 올릴 때 (쭈업, ThumbsUp) - swipeOffset이 마이너스 값이 됨 */}
+              {/* 카드를 위로 올릴 때 (쭈업) - 위쪽에서 떨어지는 주황색 그라데이션 */}
               {swipeOffset < -20 && (
-                <div className="absolute inset-0 bg-emerald-500/10 flex items-center justify-center pointer-events-none transition-opacity" style={{ opacity: Math.min(0.8, Math.abs(swipeOffset) / 100) }}>
-                  <div className="bg-white/90 p-5 rounded-full shadow-lg transform scale-110">
-                    <ThumbsUp className="w-12 h-12 text-emerald-500 fill-emerald-500" />
-                  </div>
-                </div>
+                <div 
+                  className="absolute inset-0 bg-gradient-to-b from-[#FF6200] via-[#FF6200]/40 to-transparent pointer-events-none transition-opacity" 
+                  style={{ opacity: Math.min(0.8, Math.abs(swipeOffset) / 100) }} 
+                />
               )}
-              {/* 카드를 아래로 내릴 때 (쭈따, ThumbsDown) - swipeOffset이 플러스 값이 됨 */}
+              {/* 카드를 아래로 내릴 때 (쭈따) - 아래쪽에서 올라오는 검은색 그라데이션 */}
               {swipeOffset > 20 && (
-                <div className="absolute inset-0 bg-rose-500/10 flex items-center justify-center pointer-events-none transition-opacity" style={{ opacity: Math.min(0.8, swipeOffset / 100) }}>
-                  <div className="bg-white/90 p-5 rounded-full shadow-lg transform scale-110">
-                    <ThumbsDown className="w-12 h-12 text-rose-500 fill-rose-500" />
-                  </div>
-                </div>
+                <div 
+                  className="absolute inset-0 bg-gradient-to-t from-[#000000] via-[#000000]/40 to-transparent pointer-events-none transition-opacity" 
+                  style={{ opacity: Math.min(0.8, swipeOffset / 100) }} 
+                />
               )}
             </div>
           </div>
