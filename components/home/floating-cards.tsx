@@ -312,14 +312,25 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             </div>
           )}
 
+          {/* 나가기 모달 (Exit Modal) 부분 수정 */}
           {showExitModal && (
             <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] z-50 flex items-center justify-center p-6 select-none">
               <div className="w-full max-w-[320px] bg-white rounded-[40px] px-6 py-10 flex flex-col items-center shadow-2xl">
                 <h3 className="text-2xl font-black text-[#111111] text-center">쭈템프 {stampsEarned}개 획득</h3>
                 <p className="text-sm font-medium text-zinc-400 mt-3 mb-10 text-center">총 {completedCount}명의 쭈꾸미에게<br />피드백을 전달했어요</p>
                 <div className="flex flex-col gap-3 w-full">
-                  <button onClick={handleContinueFeedback} className="w-full py-4 bg-[#4d4d4d] text-white rounded-full font-bold text-sm text-center">계속 진행 하기</button>
-                  <button onClick={handleExitFeedback} className="w-full py-4 bg-[#eaeaea] text-[#111111] rounded-full font-bold text-sm text-center">나가기</button>
+                  <button 
+                    onClick={handleContinueFeedback} 
+                    className="w-full py-4 bg-[#FF6200] text-white rounded-full font-bold text-sm text-center"
+                  >
+                    계속 진행 하기
+                  </button>
+                  <button 
+                    onClick={handleExitFeedback} 
+                    className="w-full py-4 bg-[#FFFFFF] border-[2px] border-[#9D9D9D] text-[#111111] rounded-full font-bold text-sm text-center"
+                  >
+                    나가기
+                  </button>
                 </div>
               </div>
             </div>
