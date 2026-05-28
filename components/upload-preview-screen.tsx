@@ -30,16 +30,16 @@ const TextModal = ({
         
         <div className="w-full flex gap-3">
           <button 
-            onClick={() => { if(text.trim()) onRegister(text); }} 
-            className="flex-1 h-[60px] bg-[#FF6200] text-white rounded-[30px] text-[18px] font-bold"
-          >
-            등록
-          </button>
-          <button 
             onClick={onClose} 
             className="flex-1 h-[60px] bg-white border-2 border-[#cccccc] text-[#666666] rounded-[30px] text-[18px] font-bold"
           >
             취소
+          </button>
+          <button 
+            onClick={() => { if(text.trim()) onRegister(text); }} 
+            className="flex-1 h-[60px] bg-[#FF6200] text-white rounded-[30px] text-[18px] font-bold"
+          >
+            등록
           </button>
         </div>
       </div>
@@ -100,16 +100,16 @@ const PollModal = ({
         
         <div className="w-full flex gap-3">
           <button 
-            onClick={() => onRegister(options.filter(opt => opt.trim() !== ""))} 
-            className="flex-1 h-[60px] bg-[#FF6200] text-white rounded-[30px] text-[18px] font-bold"
-          >
-            등록
-          </button>
-          <button 
             onClick={onClose} 
             className="flex-1 h-[60px] bg-white border-2 border-[#cccccc] text-[#666666] rounded-[30px] text-[18px] font-bold"
           >
             취소
+          </button>
+          <button 
+            onClick={() => onRegister(options.filter(opt => opt.trim() !== ""))} 
+            className="flex-1 h-[60px] bg-[#FF6200] text-white rounded-[30px] text-[18px] font-bold"
+          >
+            등록
           </button>
         </div>
       </div>
