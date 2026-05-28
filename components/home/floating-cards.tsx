@@ -48,6 +48,14 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   const imageContainerRef = useRef<HTMLDivElement>(null)
   const [imageWidth, setImageWidth] = useState<number | undefined>(undefined)
 
+  // 💡 [수정됨] 새 사진이 업로드(첫 번째 게시물 변경)될 때 띠의 회전 각도를 정면(0도)으로 리셋
+  useEffect(() => {
+    if (userPosts.length > 0) {
+      angleRef.current = 0
+      setAutoAngle(0)
+    }
+  }, [userPosts[0]?.id])
+
   const handleVote = (postId: string, optionIndex: number) => {
     setFeedbackQueue(prevQueue => {
       const newQueue = [...prevQueue]
@@ -458,7 +466,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           const radian = (currentAngle * Math.PI) / 180
           const cosVal = Math.cos(radian)
 
-          // 🎬 업로드 모션 로직 (생성된 지 2.5초 이내인 경우만 동작)
           const age = Date.now() - post.createdAt
           const isNewUpload = age < 2500
 
@@ -467,11 +474,9 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           let opacityVal = cosVal > -0.2 ? 1 : 0.4
 
           if (isNewUpload) {
-            const progress = Math.min(1, age / 2000) // 2초 동안 결합 모션 진행
-            const ease = 1 - Math.pow(1 - progress, 3) // easeOutCubic 이징 효과
+            const progress = Math.min(1, age / 2000) 
+            const ease = 1 - Math.pow(1 - progress, 3) 
             
-            // 💡 수정됨: 회전(rotateY) 파라미터는 처음부터 currentAngle로 고정하여 스핀 방지.
-            // Z축 공간 이동과 크기만 보간하여 앞쪽에서부터 제자리로 자연스럽게 밀려들어가도록 스며들게 처리.
             const currentRadiusNeg = 0 + (-radius - 0) * ease
             const currentRadiusPos = 400 + (radius - 400) * ease
             const currentScale = 1.5 + (1 - 1.5) * ease
