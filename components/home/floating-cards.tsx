@@ -108,13 +108,14 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
         ? now - userPostsRef.current[0].createdAt 
         : 9999
       
-      // 💡 업로드 후 2.5초가 지나면 다시 회전 시작 (그 전에는 구동을 멈춤)
+      // 💡 업로드 후 2.5초가 지나면 다시 회전 시작
       if (firstPostAge >= 2500) {
-        angleRef.current -= 0.15 
+        // 💡 원이 커지면 체감 회전 속도가 빨라지므로 0.15 -> 0.12로 미세 조정
+        angleRef.current -= 0.12 
       }
       
       setAutoAngle(angleRef.current)
-      setTick(now) // 매 프레임마다 시간을 업데이트하여 업로드 애니메이션 렌더링을 유도
+      setTick(now) 
       animationFrameId = requestAnimationFrame(rotate)
     }
 
@@ -473,7 +474,10 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
       >
         {userPosts.map((post, i) => {
           const totalCards = userPosts.length
-          const radius = Math.max(280, (totalCards * 240) / (2 * Math.PI))
+          
+          // 💡 수정됨: 최소 반경을 650px로 크게 늘려, 화면(389px)보다 확실히 크게 만들었습니다.
+          // 💡 카드가 늘어날 때 차지하는 너비(320px)도 조금 넓게 잡아 겹침을 최소화합니다.
+          const radius = Math.max(650, (totalCards * 320) / (2 * Math.PI))
           
           const cardBaseAngle = (360 / totalCards) * i
           const currentAngle = cardBaseAngle + autoAngle
@@ -493,7 +497,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             const progress = Math.min(1, age / 2000) 
             const ease = 1 - Math.pow(1 - progress, 3) 
             
-            // 💡 여기서 핵심! 시작 지점의 각도를 '0도(정면)'로 강제합니다.
             // 정면에서부터 서서히 자기 자리(currentAngle)로 꺾여 들어가도록 보간(Interpolation)
             const currentRadiusNeg = 0 + (-radius - 0) * ease
             const currentRotateY = 0 + (currentAngle - 0) * ease
@@ -504,7 +507,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             zIndexVal = 2000 
             opacityVal = 1
           } else if (isCarouselPaused) {
-            // 💡 새로 업로드된 사진을 위해, 기존 카드들이 부드럽게 한 칸씩 옆으로 밀려나는 모션 추가
             transitionStr = "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s ease"
           }
 
