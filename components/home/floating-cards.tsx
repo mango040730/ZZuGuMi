@@ -26,6 +26,14 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   const [autoAngle, setAutoAngle] = useState(0)
   const angleRef = useRef(0)
   const containerRef = useRef<HTMLDivElement>(null)
+  
+  // ⏱️ 애니메이션 프레임 동기화 및 업로드 모션 관리를 위한 시간 상태
+  const [tick, setTick] = useState(0)
+  const userPostsRef = useRef(userPosts)
+
+  useEffect(() => {
+    userPostsRef.current = userPosts
+  }, [userPosts])
 
   // 📝 피드백 페이지 모드 상태 관리
   const [selectedPost, setSelectedPost] = useState<Post | null>(null)
@@ -47,14 +55,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null)
   const imageContainerRef = useRef<HTMLDivElement>(null)
   const [imageWidth, setImageWidth] = useState<number | undefined>(undefined)
-
-  // 💡 [수정됨] 새 사진이 업로드(첫 번째 게시물 변경)될 때 띠의 회전 각도를 정면(0도)으로 리셋
-  useEffect(() => {
-    if (userPosts.length > 0) {
-      angleRef.current = 0
-      setAutoAngle(0)
-    }
-  }, [userPosts[0]?.id])
 
   const handleVote = (postId: string, optionIndex: number) => {
     setFeedbackQueue(prevQueue => {
@@ -98,12 +98,23 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     return () => observer.disconnect()
   }, [selectedPost])
 
-  // 🔄 자동 회전 애니메이션 루프
+  // 🔄 띠 회전 & 업로드 정지 로직 연동 루프
   useEffect(() => {
     let animationFrameId: number
+
     const rotate = () => {
-      angleRef.current -= 0.15 
+      const now = Date.now()
+      const firstPostAge = userPostsRef.current.length > 0 
+        ? now - userPostsRef.current[0].createdAt 
+        : 9999
+      
+      // 💡 업로드 후 2.5초가 지나면 다시 회전 시작 (그 전에는 구동을 멈춤)
+      if (firstPostAge >= 2500) {
+        angleRef.current -= 0.15 
+      }
+      
       setAutoAngle(angleRef.current)
+      setTick(now) // 매 프레임마다 시간을 업데이트하여 업로드 애니메이션 렌더링을 유도
       animationFrameId = requestAnimationFrame(rotate)
     }
 
@@ -444,6 +455,10 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   // -------------------------------------------------------------
   // 🌌 [2] 3D 원형 띠(Carousel) 레이아웃
   // -------------------------------------------------------------
+  
+  // 현재 띠가 일시정지 상태인지 판별 (새 사진이 업로드되어 합류 중일 때)
+  const isCarouselPaused = userPosts.length > 0 && (tick - userPosts[0].createdAt) < 2500
+
   return (
     <div 
       ref={containerRef}
@@ -466,24 +481,31 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           const radian = (currentAngle * Math.PI) / 180
           const cosVal = Math.cos(radian)
 
-          const age = Date.now() - post.createdAt
-          const isNewUpload = age < 2500
+          const age = tick - post.createdAt
+          const isNewUpload = i === 0 && age < 2500
 
           let transformStr = `translateZ(-${radius}px) rotateY(${currentAngle}deg) translateZ(${radius}px)`
           let zIndexVal = Math.round(cosVal * 100)
           let opacityVal = cosVal > -0.2 ? 1 : 0.4
+          let transitionStr = "none"
 
           if (isNewUpload) {
             const progress = Math.min(1, age / 2000) 
             const ease = 1 - Math.pow(1 - progress, 3) 
             
+            // 💡 여기서 핵심! 시작 지점의 각도를 '0도(정면)'로 강제합니다.
+            // 정면에서부터 서서히 자기 자리(currentAngle)로 꺾여 들어가도록 보간(Interpolation)
             const currentRadiusNeg = 0 + (-radius - 0) * ease
+            const currentRotateY = 0 + (currentAngle - 0) * ease
             const currentRadiusPos = 400 + (radius - 400) * ease
             const currentScale = 1.5 + (1 - 1.5) * ease
 
-            transformStr = `translateZ(${currentRadiusNeg}px) rotateY(${currentAngle}deg) translateZ(${currentRadiusPos}px) scale(${currentScale})`
+            transformStr = `translateZ(${currentRadiusNeg}px) rotateY(${currentRotateY}deg) translateZ(${currentRadiusPos}px) scale(${currentScale})`
             zIndexVal = 2000 
             opacityVal = 1
+          } else if (isCarouselPaused) {
+            // 💡 새로 업로드된 사진을 위해, 기존 카드들이 부드럽게 한 칸씩 옆으로 밀려나는 모션 추가
+            transitionStr = "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s ease"
           }
 
           return (
@@ -492,9 +514,10 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
               onClick={() => {
                 if (cosVal > 0 || isNewUpload) handleCardClick(i)
               }}
-              className="absolute w-[220px] h-[290px] origin-center pointer-events-auto cursor-pointer transition-transform hover:scale-105"
+              className="absolute w-[220px] h-[290px] origin-center pointer-events-auto cursor-pointer"
               style={{
                 transform: transformStr,
+                transition: transitionStr,
                 zIndex: zIndexVal,
                 opacity: opacityVal,
                 willChange: "transform, opacity",
