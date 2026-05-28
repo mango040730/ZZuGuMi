@@ -22,12 +22,10 @@ interface FloatingCardsProps {
 }
 
 export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
-  // 3D 터널 탐색용 스크롤 좌표 및 부드러운 감쇠(Lerp) 좌표 시스템
-  const [smoothScrollY, setSmoothScrollY] = useState(0)
+  // 🔄 3D 원형 띠 자동 회전을 위한 상태 및 참조
+  const [autoAngle, setAutoAngle] = useState(0)
+  const angleRef = useRef(0)
   const containerRef = useRef<HTMLDivElement>(null)
-  
-  const scrollYRef = useRef(0)
-  const smoothScrollYRef = useRef(0)
 
   // 📝 피드백 페이지 모드 상태 관리
   const [selectedPost, setSelectedPost] = useState<Post | null>(null)
@@ -51,7 +49,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   const [imageWidth, setImageWidth] = useState<number | undefined>(undefined)
 
   const handleVote = (postId: string, optionIndex: number) => {
-    // 화면에 즉시 반영 (feedbackQueue 업데이트)
     setFeedbackQueue(prevQueue => {
       const newQueue = [...prevQueue]
       const qIdx = newQueue.findIndex(p => p.id === postId)
@@ -66,7 +63,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
       return newQueue
     })
 
-    // 로컬스토리지 즉시 업데이트 (새로고침 유지용)
     const savedPosts = localStorage.getItem("zzuggumi_posts")
     if (savedPosts) {
       const parsed = JSON.parse(savedPosts) as Post[]
@@ -78,7 +74,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     }
   }
 
-  // 💡 사진 렌더링 컨테이너의 실제 너비를 측정하여 요소들의 너비와 동기화하는 로직
   useEffect(() => {
     const container = imageContainerRef.current
     if (!container || !selectedPost) return
@@ -87,58 +82,30 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
       setImageWidth(container.offsetWidth)
     }
 
-    updateWidth() // 최초 측정
+    updateWidth()
 
-    // 화면 크기가 변할 때도 실시간으로 너비 동기화
     const observer = new ResizeObserver(updateWidth)
     observer.observe(container)
 
     return () => observer.disconnect()
   }, [selectedPost])
 
-  // 📱 3D 터널 모멘텀 감쇠 애니메이션 루프
+  // 🔄 자동 회전 애니메이션 루프
   useEffect(() => {
-    let active = true
-
-    const updateSmoothScroll = () => {
-      if (!active) return
-      
-      const target = scrollYRef.current
-      const current = smoothScrollYRef.current
-      const diff = target - current
-
-      if (Math.abs(diff) > 0.05) {
-        smoothScrollYRef.current += diff * 0.15
-        setSmoothScrollY(smoothScrollYRef.current)
-      } else if (current !== target) {
-        smoothScrollYRef.current = target
-        setSmoothScrollY(target)
-      }
-
-      requestAnimationFrame(updateSmoothScroll)
+    let animationFrameId: number
+    const rotate = () => {
+      angleRef.current -= 0.15 // 회전 속도 조절 (숫자가 클수록 빠름)
+      setAutoAngle(angleRef.current)
+      animationFrameId = requestAnimationFrame(rotate)
     }
 
-    requestAnimationFrame(updateSmoothScroll)
-    return () => { active = false }
-  }, [])
-
-  // 💡 스크롤바 이동 값을 3D 렌더링 엔진으로 확실하게 전달합니다.
-  useEffect(() => {
-    const container = containerRef.current
-    if (!container) return
-
-    const handleScroll = () => {
-      scrollYRef.current = container.scrollTop
+    if (!selectedPost) {
+      animationFrameId = requestAnimationFrame(rotate)
     }
 
-    container.addEventListener("scroll", handleScroll, { passive: true })
-    
-    return () => {
-      container.removeEventListener("scroll", handleScroll)
-    }
-  }, [selectedPost, userPosts.length])
+    return () => cancelAnimationFrame(animationFrameId)
+  }, [selectedPost])
 
-  // 로컬스토리지 튜토리얼 데이터 로드
   useEffect(() => {
     const hideTutorial = localStorage.getItem("hide_feedback_tutorial_v2")
     if (hideTutorial === "true") {
@@ -155,14 +122,12 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     }
   }, [isResetting])
 
-  // 🔔 피드백 완료 카운트가 증가할 때마다 쭈템프 적립 체크 (4장당 1개)
   useEffect(() => {
     if (currentQueueIndex > 0 && currentQueueIndex % 4 === 0) {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
       
       setShowStampToast(true)
       
-      // 3초 후 자동 소멸
       toastTimerRef.current = setTimeout(() => {
         setShowStampToast(false)
       }, 3000)
@@ -173,7 +138,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     }
   }, [currentQueueIndex])
 
-  // 카드 클릭 시 피드백 진입
   const handleCardClick = (startIndex: number) => {
     const queue = [
       ...userPosts.slice(startIndex),
@@ -197,12 +161,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
   const handleCloseFeedback = () => setShowExitModal(true)
   const handleConfirmTutorial = () => setShowTutorial(false)
-  const handleHideTutorialForever = () => {
-    localStorage.setItem("hide_feedback_tutorial_v2", "true")
-    setShowTutorial(false)
-  }
-
-  // 상하 스와이프 핸들러 (clientY 사용)
+  
   const handleSwipeStart = (clientY: number) => {
     if (showTutorial || showExitModal) return
     setIsDragging(true)
@@ -219,13 +178,12 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     if (!isDragging) return
     setIsDragging(false)
 
-    // 임계값 초과 시 카드 날리기 (상하)
     if (swipeOffset > 130) {
       triggerSwipeOut("down")
     } else if (swipeOffset < -130) {
       triggerSwipeOut("up")
     } else {
-      setSwipeOffset(0) // 원위치
+      setSwipeOffset(0)
     }
   }
 
@@ -270,7 +228,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   }
 
   // -------------------------------------------------------------
-  // 📱 [1] 스와이프 피드백 모드 레이아웃
+  // 📱 [1] 스와이프 피드백 모드 레이아웃 (기존과 동일)
   // -------------------------------------------------------------
   if (selectedPost) {
     const activePost = currentQueueIndex < feedbackQueue.length ? feedbackQueue[currentQueueIndex] : feedbackQueue[feedbackQueue.length - 1]
@@ -321,7 +279,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           </div>
         </div>
 
-        {/* 💡 최상단 영역 (닫기 버튼만 우측 배치) */}
         <div className="relative h-16 w-full z-40 flex justify-end items-center px-6">
           <button 
             onClick={handleCloseFeedback} 
@@ -334,10 +291,8 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           </button>
         </div>
 
-        {/* 📸 사진 렌더링 영역 (flex-col로 변경하여 텍스트와 사진 세로 배치) */}
         <div className="flex-1 w-full px-4 pb-2 min-h-0 flex flex-col justify-center items-center relative z-10">
           
-          {/* 💡 피드백 현황 텍스트를 왼쪽으로 정렬 (사진 영역 너비에 맞춤), mb-3(12px 간격) 유지 */}
           <div 
             className="flex justify-start mb-3"
             style={{ width: imageWidth ? `${imageWidth}px` : '100%', maxWidth: '100%' }}
@@ -376,7 +331,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             <div
               className="absolute inset-0 w-full h-full rounded-[24px] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-zinc-200/40 overflow-hidden"
               style={{
-                // 카드가 수직(Y축)으로만 일직선 이동
                 transform: `translate3d(0, ${swipeOffset}px, 0)`,
                 transition: (isDragging || isResetting) ? "none" : "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
                 willChange: "transform",
@@ -385,7 +339,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             >
               <Image src={activePost.imageData} alt="Current Style" fill className="object-cover pointer-events-none" unoptimized />
 
-              {/* 투표 UI 블록 */}
               {activePost.poll && activePost.poll.length > 0 && (
                 <div 
                   className="absolute bottom-5 right-4 z-50 flex flex-col gap-2 w-[160px]" 
@@ -423,28 +376,22 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
           {showTutorial && !showExitModal && (
             <div className="absolute inset-0 bg-[#d6d6d6]/80 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center p-6 select-none">
-              
               <div className="w-full max-w-[320px] bg-[#f7f7f7] rounded-[24px] py-12 px-6 flex flex-col items-center shadow-lg">
-                
                 <div className="w-12 h-12 mb-8">
                   <svg viewBox="0 0 24 24" className="w-full h-full fill-none stroke-[#EA5C1F]" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
                   </svg>
                 </div>
-
                 <div className="text-center text-[#EA5C1F] text-[18px] font-bold leading-relaxed mb-8 tracking-tight">
                   <p>쭈업은 위, 쭈따는 아래</p>
                   <p>상하로 화면을 밀어주세요</p>
                 </div>
-
                 <div className="w-12 h-12">
                   <svg viewBox="0 0 24 24" className="w-full h-full fill-none stroke-[#EA5C1F]" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path>
                   </svg>
                 </div>
-                
               </div>
-
               <button 
                 onClick={handleConfirmTutorial}
                 className="mt-10 w-12 h-12 rounded-full border-[3px] border-white bg-transparent flex items-center justify-center transition-transform active:scale-95"
@@ -489,68 +436,52 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   }
 
   // -------------------------------------------------------------
-  // 🌌 [2] 3D 터널 레이아웃 + 스크롤바 바인딩 연동 엔진
+  // 🌌 [2] 3D 원형 띠(Carousel) 레이아웃
   // -------------------------------------------------------------
   return (
     <div 
       ref={containerRef}
-      className="relative w-full h-full overflow-y-scroll overflow-x-hidden bg-white
-                 [&::-webkit-scrollbar]:w-[6px]
-                 [&::-webkit-scrollbar-track]:bg-transparent
-                 [&::-webkit-scrollbar-thumb]:bg-zinc-300
-                 [&::-webkit-scrollbar-thumb]:rounded-full"
-      style={{ touchAction: "pan-y" }}
+      className="relative w-full h-full overflow-hidden bg-white touch-none"
     >
       <div 
-        className="w-full pointer-events-none" 
-        style={{ height: `${100 + userPosts.length * 45}vh` }} 
-      />
-
-      <div 
-        className="sticky inset-y-0 left-0 w-full h-[calc(100vh-80px)] pointer-events-none flex items-center justify-center"
+        className="absolute inset-y-0 left-0 w-full h-[calc(100vh-80px)] pointer-events-none flex items-center justify-center"
         style={{ 
-          perspective: "1000px",
+          perspective: "1200px",
           transformStyle: "preserve-3d"
         }}
       >
         {userPosts.map((post, i) => {
-          const angle = i * 1.37
-          const tunnelRadius = 130 + (i * 12) 
+          const totalCards = userPosts.length
+          // 카드가 너무 적을 때 원이 좁아지는 것을 방지하기 위해 최소 반지름을 280px로 설정합니다.
+          const radius = Math.max(280, (totalCards * 240) / (2 * Math.PI))
           
-          const translateX = Math.cos(angle) * tunnelRadius
-          const translateY = Math.sin(angle) * tunnelRadius
+          const cardBaseAngle = (360 / totalCards) * i
+          const currentAngle = cardBaseAngle + autoAngle
           
-          const rotateZ = 0
-
-          const initialZ = -i * 450 
-          const currentZ = initialZ + (smoothScrollY * 2.2)
-
-          if (currentZ > 250) return null
-
-          const progress = (currentZ + 1500) / 1750 
-          const scale = Math.min(Math.max(0.15, progress * 1.25), 1.5)
-
-          let opacity = 1
-          if (currentZ > 50) {
-            opacity = 1 - ((currentZ - 50) / 200)
-          } else if (currentZ < -1300) {
-            opacity = Math.max(0, 1 - (Math.abs(currentZ) - 1300) / 400)
-          }
+          // 라디안으로 변환하여 현재 카드가 앞쪽에 있는지 뒷쪽에 있는지 계산합니다.
+          const radian = (currentAngle * Math.PI) / 180
+          const cosVal = Math.cos(radian)
 
           return (
             <div
               key={post.id}
-              onClick={() => handleCardClick(i)}
-              className="absolute w-[220px] h-[290px] origin-center pointer-events-auto cursor-pointer"
+              onClick={() => {
+                // 뒤쪽으로 넘어간 카드가 클릭되는 것을 방지합니다.
+                if (cosVal > 0) handleCardClick(i)
+              }}
+              className="absolute w-[220px] h-[290px] origin-center pointer-events-auto cursor-pointer transition-transform hover:scale-105"
               style={{
-                transform: `translate3d(${translateX}px, ${translateY}px, ${currentZ * 0.4}px) scale(${scale}) rotateZ(${rotateZ}deg)`,
-                zIndex: 1000 - i,
-                opacity: opacity,
+                // 중심축을 뒤로(Z: -radius) 보낸 상태에서 각도만큼 회전 후 다시 앞으로(Z: radius) 꺼냅니다.
+                transform: `translateZ(-${radius}px) rotateY(${currentAngle}deg) translateZ(${radius}px)`,
+                // 화면 앞쪽에 올수록 z-index를 높여 겹침 문제를 해결합니다.
+                zIndex: Math.round(cosVal * 100),
+                // 뒤로 넘어가는 카드의 투명도를 조절해 깊이감을 줍니다.
+                opacity: cosVal > -0.2 ? 1 : 0.4,
                 willChange: "transform, opacity",
                 backfaceVisibility: "hidden"
               }}
             >
-              <div className="relative w-full h-full bg-white rounded-none overflow-hidden shadow-[0_12px_32px_rgba(0,0,0,0.06)] border border-zinc-200/40">
+              <div className="relative w-full h-full bg-white rounded-[24px] overflow-hidden shadow-[0_12px_32px_rgba(0,0,0,0.06)] border border-zinc-200/40">
                 <Image 
                   src={post.imageData} 
                   alt="Style Space Element" 
