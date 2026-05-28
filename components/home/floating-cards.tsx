@@ -110,7 +110,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
       
       // 💡 업로드 후 2.5초가 지나면 다시 회전 시작
       if (firstPostAge >= 2500) {
-        // 💡 원이 커지면 체감 회전 속도가 빨라지므로 0.15 -> 0.12로 미세 조정
         angleRef.current -= 0.12 
       }
       
@@ -473,48 +472,60 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
         }}
       >
         {userPosts.map((post, i) => {
-          const totalCards = userPosts.length
+          const totalCards = userPosts.length;
           
-          // 💡 수정됨: 최소 반경을 650px로 크게 늘려, 화면(389px)보다 확실히 크게 만들었습니다.
-          // 💡 카드가 늘어날 때 차지하는 너비(320px)도 조금 넓게 잡아 겹침을 최소화합니다.
-          const radius = Math.max(650, (totalCards * 320) / (2 * Math.PI))
-          
-          const cardBaseAngle = (360 / totalCards) * i
-          const currentAngle = cardBaseAngle + autoAngle
-          
-          const radian = (currentAngle * Math.PI) / 180
-          const cosVal = Math.cos(radian)
+          // 💡 카드 너비(220px) + 간격(8px) = 정확히 228px을 현의 길이(Chord Length)로 설정
+          const CARD_WIDTH = 220;
+          const GAP = 8;
+          const CHORD = CARD_WIDTH + GAP; 
+          const HALF_CHORD = CHORD / 2; // 114
 
-          const age = tick - post.createdAt
-          const isNewUpload = i === 0 && age < 2500
+          // 💡 화면 가로 사이즈(389px)보다 훨씬 큰 거대한 원의 최소 반지름 보장
+          let radius = 650;
 
-          let transformStr = `translateZ(-${radius}px) rotateY(${currentAngle}deg) translateZ(${radius}px)`
-          let zIndexVal = Math.round(cosVal * 100)
-          let opacityVal = cosVal > -0.2 ? 1 : 0.4
-          let transitionStr = "none"
+          // 💡 카드가 많아져서 650px 원에 8px 간격으로 전부 들어가지 않을 경우, 완벽한 원을 그리기 위해 반지름을 확장
+          if (totalCards > 17) {
+            radius = HALF_CHORD / Math.sin(Math.PI / totalCards);
+          }
+
+          // 💡 정확히 8px 간격을 유지하기 위해 요구되는 3D 배치 각도를 계산
+          const anglePerCard = 2 * Math.asin(HALF_CHORD / radius) * (180 / Math.PI);
+          
+          const cardBaseAngle = anglePerCard * i;
+          const currentAngle = cardBaseAngle + autoAngle;
+          
+          const radian = (currentAngle * Math.PI) / 180;
+          const cosVal = Math.cos(radian);
+
+          const age = tick - post.createdAt;
+          const isNewUpload = i === 0 && age < 2500;
+
+          let transformStr = `translateZ(-${radius}px) rotateY(${currentAngle}deg) translateZ(${radius}px)`;
+          let zIndexVal = Math.round(cosVal * 100);
+          let opacityVal = cosVal > -0.2 ? 1 : 0.4;
+          let transitionStr = "none";
 
           if (isNewUpload) {
-            const progress = Math.min(1, age / 2000) 
-            const ease = 1 - Math.pow(1 - progress, 3) 
+            const progress = Math.min(1, age / 2000);
+            const ease = 1 - Math.pow(1 - progress, 3);
             
-            // 정면에서부터 서서히 자기 자리(currentAngle)로 꺾여 들어가도록 보간(Interpolation)
-            const currentRadiusNeg = 0 + (-radius - 0) * ease
-            const currentRotateY = 0 + (currentAngle - 0) * ease
-            const currentRadiusPos = 400 + (radius - 400) * ease
-            const currentScale = 1.5 + (1 - 1.5) * ease
+            const currentRadiusNeg = 0 + (-radius - 0) * ease;
+            const currentRotateY = 0 + (currentAngle - 0) * ease;
+            const currentRadiusPos = 400 + (radius - 400) * ease;
+            const currentScale = 1.5 + (1 - 1.5) * ease;
 
-            transformStr = `translateZ(${currentRadiusNeg}px) rotateY(${currentRotateY}deg) translateZ(${currentRadiusPos}px) scale(${currentScale})`
-            zIndexVal = 2000 
-            opacityVal = 1
+            transformStr = `translateZ(${currentRadiusNeg}px) rotateY(${currentRotateY}deg) translateZ(${currentRadiusPos}px) scale(${currentScale})`;
+            zIndexVal = 2000; 
+            opacityVal = 1;
           } else if (isCarouselPaused) {
-            transitionStr = "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s ease"
+            transitionStr = "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s ease";
           }
 
           return (
             <div
               key={post.id}
               onClick={() => {
-                if (cosVal > 0 || isNewUpload) handleCardClick(i)
+                if (cosVal > 0 || isNewUpload) handleCardClick(i);
               }}
               className="absolute w-[220px] h-[290px] origin-center pointer-events-auto cursor-pointer"
               style={{
@@ -544,7 +555,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 )}
               </div>
             </div>
-          )
+          );
         })}
       </div>
     </div>
