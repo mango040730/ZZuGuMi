@@ -94,7 +94,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   useEffect(() => {
     let animationFrameId: number
     const rotate = () => {
-      angleRef.current -= 0.15 // 회전 속도 조절 (숫자가 클수록 빠름)
+      angleRef.current -= 0.15 
       setAutoAngle(angleRef.current)
       animationFrameId = requestAnimationFrame(rotate)
     }
@@ -228,7 +228,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   }
 
   // -------------------------------------------------------------
-  // 📱 [1] 스와이프 피드백 모드 레이아웃 (기존과 동일)
+  // 📱 [1] 스와이프 피드백 모드 레이아웃
   // -------------------------------------------------------------
   if (selectedPost) {
     const activePost = currentQueueIndex < feedbackQueue.length ? feedbackQueue[currentQueueIndex] : feedbackQueue[feedbackQueue.length - 1]
@@ -242,7 +242,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     return (
       <div className="fixed inset-0 bg-white z-50 flex flex-col justify-between overflow-hidden">
         
-        {/* 그라데이션 오버레이 */}
         <div className="absolute inset-0 z-0 pointer-events-none">
           {swipeOffset < -20 && (
             <div 
@@ -258,7 +257,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           )}
         </div>
 
-        {/* 🔔 쭈템프 적립 자동 알림창 오버레이 */}
         <div 
           className={`absolute top-16 left-0 w-full z-50 flex justify-center px-4 pointer-events-none transition-all duration-300 ease-out ${
             showStampToast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
@@ -316,7 +314,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           >
             {nextPost && !showExitModal && (
               <div 
-                className="absolute inset-0 w-full h-full rounded-[24px] overflow-hidden bg-white shadow-[0_8px_24px_rgba(0,0,0,0.04)] border border-zinc-200/40 pointer-events-none origin-center"
+                className="absolute inset-0 w-full h-full rounded-none overflow-hidden bg-white shadow-[0_8px_24px_rgba(0,0,0,0.04)] border border-zinc-200/40 pointer-events-none origin-center"
                 style={{
                   transform: `scale(${nextCardScale}) translateY(${(1 - nextCardScale) * 120}px)`,
                   opacity: nextCardOpacity,
@@ -329,7 +327,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             )}
 
             <div
-              className="absolute inset-0 w-full h-full rounded-[24px] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-zinc-200/40 overflow-hidden"
+              className="absolute inset-0 w-full h-full rounded-none bg-white shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-zinc-200/40 overflow-hidden"
               style={{
                 transform: `translate3d(0, ${swipeOffset}px, 0)`,
                 transition: (isDragging || isResetting) ? "none" : "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
@@ -452,36 +450,53 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
       >
         {userPosts.map((post, i) => {
           const totalCards = userPosts.length
-          // 카드가 너무 적을 때 원이 좁아지는 것을 방지하기 위해 최소 반지름을 280px로 설정합니다.
           const radius = Math.max(280, (totalCards * 240) / (2 * Math.PI))
           
           const cardBaseAngle = (360 / totalCards) * i
           const currentAngle = cardBaseAngle + autoAngle
           
-          // 라디안으로 변환하여 현재 카드가 앞쪽에 있는지 뒷쪽에 있는지 계산합니다.
           const radian = (currentAngle * Math.PI) / 180
           const cosVal = Math.cos(radian)
+
+          // 🎬 업로드 모션 로직 (생성된 지 2.5초 이내인 경우만 동작)
+          const age = Date.now() - post.createdAt
+          const isNewUpload = age < 2500
+
+          let transformStr = `translateZ(-${radius}px) rotateY(${currentAngle}deg) translateZ(${radius}px)`
+          let zIndexVal = Math.round(cosVal * 100)
+          let opacityVal = cosVal > -0.2 ? 1 : 0.4
+
+          if (isNewUpload) {
+            const progress = Math.min(1, age / 2000) // 2초 동안 결합 모션 진행
+            const ease = 1 - Math.pow(1 - progress, 3) // easeOutCubic 이징 효과
+            
+            // 💡 수정됨: 회전(rotateY) 파라미터는 처음부터 currentAngle로 고정하여 스핀 방지.
+            // Z축 공간 이동과 크기만 보간하여 앞쪽에서부터 제자리로 자연스럽게 밀려들어가도록 스며들게 처리.
+            const currentRadiusNeg = 0 + (-radius - 0) * ease
+            const currentRadiusPos = 400 + (radius - 400) * ease
+            const currentScale = 1.5 + (1 - 1.5) * ease
+
+            transformStr = `translateZ(${currentRadiusNeg}px) rotateY(${currentAngle}deg) translateZ(${currentRadiusPos}px) scale(${currentScale})`
+            zIndexVal = 2000 
+            opacityVal = 1
+          }
 
           return (
             <div
               key={post.id}
               onClick={() => {
-                // 뒤쪽으로 넘어간 카드가 클릭되는 것을 방지합니다.
-                if (cosVal > 0) handleCardClick(i)
+                if (cosVal > 0 || isNewUpload) handleCardClick(i)
               }}
               className="absolute w-[220px] h-[290px] origin-center pointer-events-auto cursor-pointer transition-transform hover:scale-105"
               style={{
-                // 중심축을 뒤로(Z: -radius) 보낸 상태에서 각도만큼 회전 후 다시 앞으로(Z: radius) 꺼냅니다.
-                transform: `translateZ(-${radius}px) rotateY(${currentAngle}deg) translateZ(${radius}px)`,
-                // 화면 앞쪽에 올수록 z-index를 높여 겹침 문제를 해결합니다.
-                zIndex: Math.round(cosVal * 100),
-                // 뒤로 넘어가는 카드의 투명도를 조절해 깊이감을 줍니다.
-                opacity: cosVal > -0.2 ? 1 : 0.4,
+                transform: transformStr,
+                zIndex: zIndexVal,
+                opacity: opacityVal,
                 willChange: "transform, opacity",
                 backfaceVisibility: "hidden"
               }}
             >
-              <div className="relative w-full h-full bg-white rounded-[24px] overflow-hidden shadow-[0_12px_32px_rgba(0,0,0,0.06)] border border-zinc-200/40">
+              <div className="relative w-full h-full bg-white rounded-none overflow-hidden shadow-[0_12px_32px_rgba(0,0,0,0.06)] border border-zinc-200/40">
                 <Image 
                   src={post.imageData} 
                   alt="Style Space Element" 
@@ -495,12 +510,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                     <p className="text-[10px] text-white font-semibold leading-tight line-clamp-2">
                       {post.questionText}
                     </p>
-                  </div>
-                )}
-
-                {i === 0 && (
-                  <div className="absolute -top-2 -right-3 px-2 py-1 bg-[#FF6200] rounded-sm">
-                    <span className="text-[8px] text-white font-medium">NEW</span>
                   </div>
                 )}
               </div>
