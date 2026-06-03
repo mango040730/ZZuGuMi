@@ -29,7 +29,28 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   const [tick, setTick] = useState(0)
   const userPostsRef = useRef(userPosts)
 
+  // 💡 새 사진 추가 시 기존 카드들이 점프하지 않고 자연스럽게 공간을 열어주도록 각도 보정
+  const prevPostsLength = useRef(userPosts.length)
+
   useEffect(() => {
+    if (userPosts.length > prevPostsLength.current && prevPostsLength.current > 0) {
+      const totalCards = userPosts.length
+      const CARD_WIDTH = 220
+      const GAP = 124
+      const HALF_CHORD = (CARD_WIDTH + GAP) / 2
+      
+      let radius = 800
+      if (totalCards > 14) {
+        radius = HALF_CHORD / Math.sin(Math.PI / totalCards)
+      }
+      
+      const anglePerCard = 2 * Math.asin(HALF_CHORD / radius) * (180 / Math.PI)
+      
+      // 새 카드가 들어올 공간을 확보하기 위해 전체 궤도를 한 칸 뒤로 밀어냅니다.
+      angleRef.current -= anglePerCard
+      setAutoAngle(angleRef.current)
+    }
+    prevPostsLength.current = userPosts.length
     userPostsRef.current = userPosts
   }, [userPosts])
 
@@ -86,7 +107,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     }
 
     updateWidth()
-
     const observer = new ResizeObserver(updateWidth)
     observer.observe(container)
 
@@ -102,7 +122,8 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
         ? now - userPostsRef.current[0].createdAt 
         : 9999
       
-      if (firstPostAge >= 2500) {
+      // 💡 업로드 후 3초 동안은 배경 띠가 일시 정지합니다.
+      if (firstPostAge >= 3000) {
         angleRef.current -= 0.08 
       }
       
@@ -127,9 +148,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
   useEffect(() => {
     if (isResetting) {
-      const raf = requestAnimationFrame(() => {
-        setIsResetting(false)
-      })
+      const raf = requestAnimationFrame(() => setIsResetting(false))
       return () => cancelAnimationFrame(raf)
     }
   }, [isResetting])
@@ -137,14 +156,9 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   useEffect(() => {
     if (currentQueueIndex > 0 && currentQueueIndex % 4 === 0) {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
-      
       setShowStampToast(true)
-      
-      toastTimerRef.current = setTimeout(() => {
-        setShowStampToast(false)
-      }, 3000)
+      toastTimerRef.current = setTimeout(() => setShowStampToast(false), 3000)
     }
-
     return () => {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
     }
@@ -190,13 +204,9 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     if (!isDragging) return
     setIsDragging(false)
 
-    if (swipeOffset > 130) {
-      triggerSwipeOut("down")
-    } else if (swipeOffset < -130) {
-      triggerSwipeOut("up")
-    } else {
-      setSwipeOffset(0)
-    }
+    if (swipeOffset > 130) triggerSwipeOut("down")
+    else if (swipeOffset < -130) triggerSwipeOut("up")
+    else setSwipeOffset(0)
   }
 
   const triggerSwipeOut = (direction: "up" | "down") => {
@@ -231,7 +241,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
   if (userPosts.length === 0) {
     return (
-      // 💡 빈 화면일 때의 배경을 bg-white로 변경
       <div className="flex flex-col items-center justify-center h-full w-full text-zinc-400 bg-white">
         <div className="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-3">📸</div>
         <p className="text-sm font-medium">아직 업로드된 스타일이 없습니다.</p>
@@ -240,6 +249,9 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     )
   }
 
+  // -------------------------------------------------------------
+  // 📱 [1] 스와이프 피드백 모드 레이아웃 (이전과 동일)
+  // -------------------------------------------------------------
   if (selectedPost) {
     const activePost = currentQueueIndex < feedbackQueue.length ? feedbackQueue[currentQueueIndex] : feedbackQueue[feedbackQueue.length - 1]
     const nextPost = currentQueueIndex + 1 < feedbackQueue.length ? feedbackQueue[currentQueueIndex + 1] : null
@@ -251,7 +263,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
     return (
       <div className="fixed inset-0 bg-white z-50 flex flex-col justify-between overflow-hidden">
-        
         <div className="absolute inset-0 z-0 pointer-events-none">
           {swipeOffset < -20 && (
             <div 
@@ -300,7 +311,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
         </div>
 
         <div className="flex-1 w-full px-4 pb-2 min-h-0 flex flex-col justify-center items-center relative z-10">
-          
           <div 
             className="flex justify-start mb-3"
             style={{ width: imageWidth ? `${imageWidth}px` : '100%', maxWidth: '100%' }}
@@ -465,10 +475,13 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     )
   }
 
-  const isCarouselPaused = userPosts.length > 0 && (tick - userPosts[0].createdAt) < 2500
+  // -------------------------------------------------------------
+  // 🌌 [2] 3D 원통형(Carousel) 레이아웃 - 스며드는 애니메이션 적용
+  // -------------------------------------------------------------
+  
+  const isCarouselPaused = userPosts.length > 0 && (tick - userPosts[0].createdAt) < 3000
 
   return (
-    // 💡 회전하는 3D 컨테이너 배경색을 bg-white로 변경
     <div 
       ref={containerRef}
       className="relative w-full h-full overflow-hidden bg-white touch-none"
@@ -481,59 +494,77 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
         }}
       >
         {userPosts.map((post, i) => {
-          const totalCards = userPosts.length;
+          const totalCards = userPosts.length
           
-          const CARD_WIDTH = 220;
-          const GAP = 124;
-          const CHORD = CARD_WIDTH + GAP; 
-          const HALF_CHORD = CHORD / 2; // 172
+          const CARD_WIDTH = 220
+          const GAP = 124
+          const CHORD = CARD_WIDTH + GAP 
+          const HALF_CHORD = CHORD / 2 // 172
 
-          let radius = 800;
+          let radius = 800
 
           if (totalCards > 14) {
-            radius = HALF_CHORD / Math.sin(Math.PI / totalCards);
+            radius = HALF_CHORD / Math.sin(Math.PI / totalCards)
           }
 
-          const anglePerCard = 2 * Math.asin(HALF_CHORD / radius) * (180 / Math.PI);
+          const anglePerCard = 2 * Math.asin(HALF_CHORD / radius) * (180 / Math.PI)
+          const cardBaseAngle = anglePerCard * i
+          const currentAngle = cardBaseAngle + autoAngle
           
-          const cardBaseAngle = anglePerCard * i;
-          const currentAngle = cardBaseAngle + autoAngle;
+          const radian = (currentAngle * Math.PI) / 180
+          const cosVal = Math.cos(radian)
+
+          const age = tick - post.createdAt
+          // 💡 새 사진 업로드 시 3초에 걸쳐 애니메이션 진행
+          const isNewUpload = i === 0 && age < 3000
+
+          let transformStr = `translateZ(-${radius}px) rotateY(${currentAngle}deg) translateZ(${radius}px)`
+          let zIndexVal = Math.round(cosVal * 100)
           
-          const radian = (currentAngle * Math.PI) / 180;
-          const cosVal = Math.cos(radian);
+          let opacityVal = cosVal > 0.6 ? 1 : 0.2 + ((cosVal + 1) / 1.6) * 0.8
+          opacityVal = Math.max(0.2, Math.min(1, opacityVal))
 
-          const age = tick - post.createdAt;
-          const isNewUpload = i === 0 && age < 2500;
-
-          let transformStr = `translateZ(-${radius}px) rotateY(${currentAngle}deg) translateZ(${radius}px)`;
-          let zIndexVal = Math.round(cosVal * 100);
-          
-          let opacityVal = cosVal > 0.6 ? 1 : 0.2 + ((cosVal + 1) / 1.6) * 0.8;
-          opacityVal = Math.max(0.2, Math.min(1, opacityVal));
-
-          let transitionStr = "none";
+          let transitionStr = "none"
 
           if (isNewUpload) {
-            const progress = Math.min(1, age / 2000);
-            const ease = 1 - Math.pow(1 - progress, 3);
-            
-            const currentRadiusNeg = 0 + (-radius - 0) * ease;
-            const currentRotateY = 0 + (currentAngle - 0) * ease;
-            const currentRadiusPos = 400 + (radius - 400) * ease;
-            const currentScale = 1.5 + (1 - 1.5) * ease;
+            // 자바스크립트 프레임 애니메이션으로 통제하므로 CSS 트랜지션 해제
+            transitionStr = "none"
 
-            transformStr = `translateZ(${currentRadiusNeg}px) rotateY(${currentRotateY}deg) translateZ(${currentRadiusPos}px) scale(${currentScale})`;
-            zIndexVal = 2000; 
-            opacityVal = 1;
+            if (age < 1500) {
+              // [페이즈 1]: 처음 1.5초 동안 화면 중앙에 머무르며 시선을 집중시킵니다.
+              const introProgress = Math.min(1, age / 400) // 0.4초 만에 서서히 나타남
+              const introEase = 1 - Math.pow(1 - introProgress, 3)
+              const introScale = 0.8 + (1.2 - 0.8) * introEase
+              
+              transformStr = `translateZ(0px) rotateY(0deg) translateZ(300px) scale(${introScale})`
+              zIndexVal = 2000 
+              opacityVal = introProgress
+            } else {
+              // [페이즈 2]: 남은 1.5초 동안 뒤쪽 회전 띠의 지정된 위치로 부드럽게 스며들어 갑니다.
+              const progress = Math.min(1, (age - 1500) / 1500) 
+              const ease = 1 - Math.pow(1 - progress, 3)
+              
+              const currentRadiusNeg = 0 + (-radius - 0) * ease
+              const currentRotateY = 0 + (currentAngle - 0) * ease
+              const currentRadiusPos = 300 + (radius - 300) * ease
+              const currentScale = 1.2 + (1 - 1.2) * ease
+
+              transformStr = `translateZ(${currentRadiusNeg}px) rotateY(${currentRotateY}deg) translateZ(${currentRadiusPos}px) scale(${currentScale})`
+              zIndexVal = 2000 
+              
+              const targetOpacity = cosVal > 0.6 ? 1 : 0.2 + ((cosVal + 1) / 1.6) * 0.8
+              opacityVal = 1 + (Math.max(0.2, Math.min(1, targetOpacity)) - 1) * ease
+            }
           } else if (isCarouselPaused) {
-            transitionStr = "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s ease";
+            // 💡 기존에 돌고 있던 사진들은 새 사진이 들어갈 자리를 열어주기 위해 CSS로 스르륵 밀려납니다.
+            transitionStr = "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s ease"
           }
 
           return (
             <div
               key={post.id}
               onClick={() => {
-                if (cosVal > 0.8 || isNewUpload) handleCardClick(i);
+                if (cosVal > 0.8 || isNewUpload) handleCardClick(i)
               }}
               className="absolute w-[220px] h-[290px] origin-center pointer-events-auto cursor-pointer"
               style={{
@@ -563,7 +594,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 )}
               </div>
             </div>
-          );
+          )
         })}
       </div>
     </div>
