@@ -110,7 +110,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
       
       // 💡 업로드 후 2.5초가 지나면 다시 회전 시작
       if (firstPostAge >= 2500) {
-        // 지름이 1000px로 줄었으므로 회전 속도를 0.08 정도로 맞춰줍니다.
         angleRef.current -= 0.08 
       }
       
@@ -497,15 +496,15 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           const totalCards = userPosts.length;
           
           const CARD_WIDTH = 220;
-          const GAP = 16;
+          // 💡 카드 간격을 기존 16에서 4배 늘린 64로 수정했습니다.
+          const GAP = 64;
           const CHORD = CARD_WIDTH + GAP; 
-          const HALF_CHORD = CHORD / 2; // 118
+          const HALF_CHORD = CHORD / 2; // 142
 
-          // 💡 원의 지름(반경) 1000px 설정
           let radius = 1000;
 
-          // 카드가 많아져서 원형 둘레를 초과할 경우에만 동적으로 추가 확장
-          if (totalCards > 25) {
+          // 간격이 넓어졌으므로 20장 이상일 때부터 반지름이 늘어나도록 기준을 낮췄습니다.
+          if (totalCards > 20) {
             radius = HALF_CHORD / Math.sin(Math.PI / totalCards);
           }
 
@@ -524,7 +523,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           let transformStr = `translateZ(-${radius}px) rotateY(${currentAngle}deg) translateZ(${radius}px)`;
           let zIndexVal = Math.round(cosVal * 100);
           
-          // 💡 화면 뒤로 넘어간 카드도 보이도록 투명도(opacity) 하한선을 높여줍니다. (최소 20% 유지)
+          // 화면 뒤로 넘어간 카드도 보이도록 투명도 설정
           let opacityVal = cosVal > 0.6 ? 1 : 0.2 + ((cosVal + 1) / 1.6) * 0.8;
           opacityVal = Math.max(0.2, Math.min(1, opacityVal));
 
@@ -550,7 +549,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             <div
               key={post.id}
               onClick={() => {
-                // 렌즈 앞 정면 근처 영역(cosVal > 0.8)에 위치한 카드만 클릭 가능하도록 제한합니다.
                 if (cosVal > 0.8 || isNewUpload) handleCardClick(i);
               }}
               className="absolute w-[220px] h-[290px] origin-center pointer-events-auto cursor-pointer"
@@ -560,7 +558,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 zIndex: zIndexVal,
                 opacity: opacityVal,
                 willChange: "transform, opacity",
-                // 💡 backfaceVisibility: "hidden" 설정을 제거하여 뒷모습(반전된 형태)이 보이도록 했습니다.
                 WebkitBoxReflect: "below 4px linear-gradient(to bottom, transparent 65%, rgba(0,0,0,0.5))"
               }}
             >
