@@ -231,8 +231,9 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
   if (userPosts.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full w-full text-zinc-400 bg-[#f3f3f1]">
-        <div className="w-16 h-16 rounded-full bg-zinc-200 flex items-center justify-center mb-3">📸</div>
+      // 💡 빈 화면일 때의 배경을 bg-white로 변경
+      <div className="flex flex-col items-center justify-center h-full w-full text-zinc-400 bg-white">
+        <div className="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-3">📸</div>
         <p className="text-sm font-medium">아직 업로드된 스타일이 없습니다.</p>
         <p className="text-xs text-zinc-400 mt-1">하단 카메라 버튼을 눌러 첫 사진을 올려보세요!</p>
       </div>
@@ -467,9 +468,10 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   const isCarouselPaused = userPosts.length > 0 && (tick - userPosts[0].createdAt) < 2500
 
   return (
+    // 💡 회전하는 3D 컨테이너 배경색을 bg-white로 변경
     <div 
       ref={containerRef}
-      className="relative w-full h-full overflow-hidden bg-[#f3f3f1] touch-none"
+      className="relative w-full h-full overflow-hidden bg-white touch-none"
     >
       <div 
         className="absolute inset-y-0 left-0 w-full h-[calc(100vh-80px)] pointer-events-none flex items-center justify-center"
@@ -482,20 +484,16 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           const totalCards = userPosts.length;
           
           const CARD_WIDTH = 220;
-          // 💡 카드 간격을 124px로 수정했습니다.
           const GAP = 124;
           const CHORD = CARD_WIDTH + GAP; 
           const HALF_CHORD = CHORD / 2; // 172
 
-          // 💡 원의 지름(반경)을 800px로 수정했습니다.
           let radius = 800;
 
-          // 간격과 반지름에 맞춰 14장 이상일 때부터 반지름이 늘어나도록 기준을 조정했습니다.
           if (totalCards > 14) {
             radius = HALF_CHORD / Math.sin(Math.PI / totalCards);
           }
 
-          // 카드가 배치되는 각도를 재계산
           const anglePerCard = 2 * Math.asin(HALF_CHORD / radius) * (180 / Math.PI);
           
           const cardBaseAngle = anglePerCard * i;

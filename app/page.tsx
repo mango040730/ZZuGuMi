@@ -28,7 +28,6 @@ export default function Home() {
   const [posts, setPosts] = useState<Post[]>([])
   const [isTransitioning, setIsTransitioning] = useState(false)
 
-  // 1. 앱이 처음 켜질 때 브라우저 저장소(localStorage)에서 기존 사진 가져오기
   useEffect(() => {
     const savedPosts = localStorage.getItem("zzuggumi_posts")
     if (savedPosts) {
@@ -37,7 +36,6 @@ export default function Home() {
         const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000
         const now = Date.now()
         
-        // 가져오는 순간에도 이미 12시간이 지난 사진이 있다면 걸러내기
         const validPosts = parsedPosts.filter(post => (now - post.createdAt) < TWELVE_HOURS_MS)
         setPosts(validPosts)
         localStorage.setItem("zzuggumi_posts", JSON.stringify(validPosts))
@@ -47,7 +45,6 @@ export default function Home() {
     }
   }, [])
 
-  // 2. 주기적으로 12시간 지난 포스트 감지해서 삭제하기 (1분마다 체크)
   useEffect(() => {
     const checkExpiration = () => {
       const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000
@@ -76,7 +73,6 @@ export default function Home() {
     setCurrentScreen("preview")
   }
   
-  // 3. 업로드할 때 브라우저 저장소에도 함께 저장하기 (투표 옵션 포함)
   const handleUpload = (questionText: string, mergedImage?: string, pollOptions?: string[]) => {
     if (capturedImage || mergedImage) {
       const newPost: Post = {
@@ -92,7 +88,6 @@ export default function Home() {
       setIsTransitioning(true)
       setPosts(prevPosts => {
         const updatedPosts = [newPost, ...prevPosts]
-        // 브라우저 저장소에 영구 보존(새로고침 대비)
         localStorage.setItem("zzuggumi_posts", JSON.stringify(updatedPosts))
         return updatedPosts
       })
@@ -110,8 +105,9 @@ export default function Home() {
 
   return (
     <>
+      {/* 💡 배경색을 bg-[#f3f3f1] 에서 bg-white 로 변경했습니다. */}
       <main 
-        className={`relative min-h-screen w-full max-w-md mx-auto bg-[#f3f3f1] overflow-hidden transition-opacity duration-300 ${
+        className={`relative min-h-screen w-full max-w-md mx-auto bg-white overflow-hidden transition-opacity duration-300 ${
           currentScreen !== "home" ? "opacity-0" : "opacity-100"
         }`}
       >
