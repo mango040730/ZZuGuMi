@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
-import { X } from "lucide-react"
+import { X, ThumbsUp, ThumbsDown } from "lucide-react"
 
 export interface PollOption {
   text: string
@@ -261,21 +261,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     return (
       <div className="fixed inset-0 bg-white z-50 flex flex-col justify-between overflow-hidden">
         
-        <div className="absolute inset-0 z-0 pointer-events-none">
-          {swipeOffset < -20 && (
-            <div 
-              className="absolute inset-0 bg-gradient-to-b from-[#FF6200]/60 via-[#FF6200]/20 to-transparent transition-opacity" 
-              style={{ opacity: Math.min(1, Math.abs(swipeOffset) / 100) }} 
-            />
-          )}
-          {swipeOffset > 20 && (
-            <div 
-              className="absolute inset-0 bg-gradient-to-t from-[#000000]/80 via-[#000000]/40 to-transparent transition-opacity" 
-              style={{ opacity: Math.min(1, swipeOffset / 100) }} 
-            />
-          )}
-        </div>
-
         <div 
           className={`absolute top-16 left-0 w-full z-50 flex justify-center px-4 pointer-events-none transition-all duration-300 ease-out ${
             showStampToast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
@@ -355,6 +340,30 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
               }}
             >
               <Image src={activePost.imageData} alt="Current Style" fill className="object-cover pointer-events-none" unoptimized />
+
+              {/* ⬆️ 위로 스와이프: 주황색 그라데이션 & ThumbsUp 아이콘 */}
+              {swipeOffset < -20 && (
+                <div 
+                  className="absolute inset-0 pointer-events-none flex items-center justify-center bg-gradient-to-b from-[#FF6200]/90 via-[#FF6200]/50 to-transparent transition-opacity z-20"
+                  style={{ opacity: Math.min(1, Math.abs(swipeOffset) / 100) }}
+                >
+                  <div className="w-[80px] h-[80px] rounded-full border-[4px] border-white flex items-center justify-center shadow-lg bg-transparent">
+                    <ThumbsUp className="w-10 h-10 text-white" strokeWidth={2.5} />
+                  </div>
+                </div>
+              )}
+
+              {/* ⬇️ 아래로 스와이프: 검정색 그라데이션 & ThumbsDown 아이콘 */}
+              {swipeOffset > 20 && (
+                <div 
+                  className="absolute inset-0 pointer-events-none flex items-end justify-center pb-24 bg-gradient-to-t from-black/90 via-black/50 to-transparent transition-opacity z-20"
+                  style={{ opacity: Math.min(1, swipeOffset / 100) }}
+                >
+                  <div className="w-[80px] h-[80px] rounded-full border-[4px] border-white flex items-center justify-center shadow-lg bg-transparent">
+                    <ThumbsDown className="w-10 h-10 text-white" strokeWidth={2.5} />
+                  </div>
+                </div>
+              )}
 
               {activePost.poll && activePost.poll.length > 0 && (
                 <div 
