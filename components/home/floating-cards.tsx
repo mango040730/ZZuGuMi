@@ -22,12 +22,10 @@ interface FloatingCardsProps {
 }
 
 export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
-  // 🔄 커버플로우 자동 회전을 위한 상태 및 참조
   const [autoAngle, setAutoAngle] = useState(0)
   const angleRef = useRef(0)
   const containerRef = useRef<HTMLDivElement>(null)
   
-  // ⏱️ 애니메이션 프레임 동기화 및 업로드 모션 관리를 위한 시간 상태
   const [tick, setTick] = useState(0)
   const userPostsRef = useRef(userPosts)
 
@@ -35,13 +33,11 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     userPostsRef.current = userPosts
   }, [userPosts])
 
-  // 📝 피드백 페이지 모드 상태 관리
   const [selectedPost, setSelectedPost] = useState<Post | null>(null)
   const [feedbackQueue, setFeedbackQueue] = useState<Post[]>([])
   const [currentQueueIndex, setCurrentQueueIndex] = useState(0)
   const [showTutorial, setShowTutorial] = useState(true)
 
-  // 🖐️ 스와이프 물리 좌표 및 드래그 상태 (상하 이동)
   const [dragStartY, setDragStartY] = useState(0)
   const [swipeOffset, setSwipeOffset] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
@@ -50,7 +46,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   const [isResetting, setIsResetting] = useState(false)
   const [showExitModal, setShowExitModal] = useState(false)
 
-  // 🔔 쭈템프 획득 상단 알림창 상태 관리 및 너비 동기화
   const [showStampToast, setShowStampToast] = useState(false)
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null)
   const imageContainerRef = useRef<HTMLDivElement>(null)
@@ -98,7 +93,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     return () => observer.disconnect()
   }, [selectedPost])
 
-  // 🔄 띠 회전 & 업로드 정지 로직 연동 루프
   useEffect(() => {
     let animationFrameId: number
 
@@ -108,9 +102,8 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
         ? now - userPostsRef.current[0].createdAt 
         : 9999
       
-      // 💡 업로드 후 2.5초가 지나면 다시 회전 시작
       if (firstPostAge >= 2500) {
-        angleRef.current -= 0.12 
+        angleRef.current -= 0.15 
       }
       
       setAutoAngle(angleRef.current)
@@ -246,9 +239,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     )
   }
 
-  // -------------------------------------------------------------
-  // 📱 [1] 스와이프 피드백 모드 레이아웃
-  // -------------------------------------------------------------
   if (selectedPost) {
     const activePost = currentQueueIndex < feedbackQueue.length ? feedbackQueue[currentQueueIndex] : feedbackQueue[feedbackQueue.length - 1]
     const nextPost = currentQueueIndex + 1 < feedbackQueue.length ? feedbackQueue[currentQueueIndex + 1] : null
@@ -459,11 +449,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     )
   }
 
-  // -------------------------------------------------------------
-  // 🌌 [2] 커버플로우(Cover Flow) 3D 레이아웃
-  // -------------------------------------------------------------
-  
-  // 현재 띠가 일시정지 상태인지 판별 (새 사진이 업로드되어 합류 중일 때)
   const isCarouselPaused = userPosts.length > 0 && (tick - userPosts[0].createdAt) < 2500
 
   return (
@@ -488,25 +473,23 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           if (rawAngle > 180) rawAngle -= 360;
           if (rawAngle < -180) rawAngle += 360;
 
-          // 💡 Cover Flow 수식 매핑
-          // progress는 중앙(0)에서부터 왼쪽(-) 혹은 오른쪽(+)으로 몇 번째에 위치하는지를 나타냅니다.
           const progress = rawAngle / anglePerCard; 
           const clampedProgress = Math.max(-1, Math.min(1, progress));
 
-          const gap = 70; // 겹쳐지는 카드 간격
-          const centerOffset = 130; // 중앙 카드로부터 양옆 카드를 얼마나 밀어낼지 결정
+          // 간격 및 깊이 조절 (스태킹 효과 강화)
+          const stackGap = 35; // 겹쳐지는 카드 간격
+          const centerOffset = 160; // 중앙 카드 주변 여백
+          
+          const translateX = progress * stackGap + clampedProgress * centerOffset;
+          const rotateY = clampedProgress * -65; 
+          
+          // Z축 깊이를 조절하여 겹치는 카드의 원근감을 확실히 부여
+          const translateZ = Math.abs(clampedProgress) * -220 - Math.abs(progress) * 15;
+          const scale = 1 - Math.abs(clampedProgress) * 0.15;
 
-          // 위치(X), 각도(Y), 깊이(Z), 크기(Scale) 계산
-          const translateX = progress * gap + clampedProgress * centerOffset;
-          const rotateY = clampedProgress * -55; 
-          const translateZ = Math.abs(clampedProgress) * -180 - Math.abs(progress) * 20;
-          const scale = 1 - Math.abs(clampedProgress) * 0.1;
-
-          // 한 바퀴 돌아서 뒤로 넘어갈 때 자연스럽게 페이드아웃 되도록 투명도 조정
-          let opacityVal = 1 - Math.pow(Math.abs(rawAngle) / 180, 4);
+          let opacityVal = 1 - Math.pow(Math.abs(rawAngle) / 180, 2.5);
           opacityVal = Math.max(0, Math.min(1, opacityVal));
           
-          // 앞쪽 카드일수록 z-index가 높도록 설정
           let zIndexVal = 1000 - Math.round(Math.abs(progress) * 100);
 
           const age = tick - post.createdAt;
@@ -516,7 +499,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           let transitionStr = "none";
 
           if (isNewUpload) {
-            // 업로드 시 화면 밖 아래에서 위로 날아와서 합류하는 애니메이션
             const progressAnim = Math.min(1, age / 2000);
             const ease = 1 - Math.pow(1 - progressAnim, 3);
             
@@ -537,7 +519,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             <div
               key={post.id}
               onClick={() => {
-                // 중앙 근처에 있는 카드들만 클릭 가능하도록 제한
                 if (Math.abs(progress) <= 1.5 || isNewUpload) handleCardClick(i);
               }}
               className="absolute w-[220px] h-[290px] origin-center pointer-events-auto cursor-pointer"
@@ -547,11 +528,10 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 zIndex: zIndexVal,
                 opacity: opacityVal,
                 willChange: "transform, opacity",
-                // 💡 바닥 반사(Reflection) 효과 추가
-                WebkitBoxReflect: "below 4px linear-gradient(to bottom, rgba(0,0,0,0) 70%, rgba(0,0,0,0.3))"
+                WebkitBoxReflect: "below 4px linear-gradient(to bottom, transparent 65%, rgba(0,0,0,0.6))"
               }}
             >
-              <div className="relative w-full h-full bg-white rounded-none overflow-hidden shadow-[0_12px_32px_rgba(0,0,0,0.12)] border border-zinc-200/40">
+              <div className="relative w-full h-full bg-white rounded-none overflow-hidden shadow-[0_12px_32px_rgba(0,0,0,0.15)] border border-zinc-200/40">
                 <Image 
                   src={post.imageData} 
                   alt="Style Space Element" 
