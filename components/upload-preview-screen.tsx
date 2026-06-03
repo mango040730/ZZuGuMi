@@ -138,6 +138,7 @@ export function UploadPreviewScreen({
   const [isMosaicMode, setIsMosaicMode] = useState(false)
   const [isEraserMode, setIsEraserMode] = useState(false)
   
+  // 모달 상태 관리
   const [isTextModalOpen, setIsTextModalOpen] = useState(true)
   const [isPollModalOpen, setIsPollModalOpen] = useState(false)
   
@@ -199,9 +200,7 @@ export function UploadPreviewScreen({
       onUpload(questionText, capturedImage, pollOptions)
       return
     }
-    
     setIsUploading(true)
-    
     try {
       const container = containerRef.current
       if (!container) {
@@ -211,12 +210,11 @@ export function UploadPreviewScreen({
 
       if (typeof window === "undefined") return
 
-      const img = new Image()
-      // 💡 수정된 부분: Base64 이미지에 불필요한 crossOrigin 속성을 부여하여 
-      // Safari 등에서 캔버스가 오염(Tainted)되는 현상을 방지합니다.
+      const img = new window.Image()
+      img.crossOrigin = "anonymous"
       await new Promise((resolve, reject) => {
         img.onload = resolve
-        img.onerror = () => reject(new Error("Image Load Error"))
+        img.onerror = reject
         img.src = capturedImage
       })
 
@@ -227,13 +225,11 @@ export function UploadPreviewScreen({
       canvas.width = outWidth
       canvas.height = outHeight
       const ctx = canvas.getContext("2d")
-      
       if (!ctx) {
         onUpload(questionText, capturedImage, pollOptions)
         return
       }
 
-      // 1. 원본 바탕 그리기
       const scale = Math.max(outWidth / img.width, outHeight / img.height)
       const sw = outWidth / scale
       const sh = outHeight / scale
@@ -241,25 +237,20 @@ export function UploadPreviewScreen({
       const sy = (img.height - sh) / 2
       ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outWidth, outHeight)
 
-      const allStrokes = currentStroke.length > 0 ? [...strokes, currentStroke] : strokes
-
-      // 2. 모자이크 레이어 씌우기
-      if (allStrokes.length > 0) {
+      if (strokes.length > 0 || currentStroke.length > 0) {
         const strokeScale = outWidth / clientWidth
+        const allStrokes = currentStroke.length > 0 ? [...strokes, currentStroke] : strokes
         const blurCanvas = document.createElement("canvas")
         blurCanvas.width = outWidth
         blurCanvas.height = outHeight
         const blurCtx = blurCanvas.getContext("2d")
-        
         if (blurCtx) {
           blurCtx.filter = `blur(${16 * strokeScale}px)`
           blurCtx.drawImage(img, sx, sy, sw, sh, 0, 0, outWidth, outHeight)
-          
           const maskCanvas = document.createElement("canvas")
           maskCanvas.width = outWidth
           maskCanvas.height = outHeight
           const maskCtx = maskCanvas.getContext("2d")
-          
           if (maskCtx) {
             maskCtx.strokeStyle = "black"
             maskCtx.fillStyle = "black"
@@ -268,7 +259,6 @@ export function UploadPreviewScreen({
             maskCtx.lineJoin = "round"
             maskCtx.shadowColor = "black"
             maskCtx.shadowBlur = 8 * strokeScale
-            
             allStrokes.forEach(stroke => {
               if (stroke.length === 0) return
               if (stroke.length === 1) {
@@ -282,19 +272,16 @@ export function UploadPreviewScreen({
                 maskCtx.stroke()
               }
             })
-            
             maskCtx.shadowColor = "transparent"
             maskCtx.shadowBlur = 0
             maskCtx.globalCompositeOperation = "source-in"
             maskCtx.drawImage(blurCanvas, 0, 0)
-            
             ctx.globalCompositeOperation = "source-over"
             ctx.drawImage(maskCanvas, 0, 0)
           }
         }
       }
 
-      // 3. 텍스트 레이어 씌우기
       if (questionText.trim().length > 0) {
         const textScale = outWidth / clientWidth
         const fontSize = Math.round(30 * textScale) 
@@ -306,24 +293,19 @@ export function UploadPreviewScreen({
         ctx.shadowBlur = 12 * textScale
         ctx.shadowOffsetX = 0
         ctx.shadowOffsetY = 4 * textScale
-        
         const padding = 24 * textScale
         const maxWidth = outWidth - (padding * 2)
         const words = questionText.split("\n")
         let currentY = padding
-        
         words.forEach(line => {
           ctx.fillText(line, padding, currentY, maxWidth)
           currentY += fontSize * 1.3 
         })
       }
-      
       const mergedImageData = canvas.toDataURL("image/jpeg", 0.9)
       onUpload(questionText, mergedImageData, pollOptions)
-      
     } catch (e) {
-      console.error("Image merge error:", e)
-      // 변환 중 에러 발생 시 원본 사진을 그대로 올리도록 fallback 처리
+      console.error(e)
       onUpload(questionText, capturedImage, pollOptions)
     } finally {
       setIsUploading(false)
@@ -389,7 +371,7 @@ export function UploadPreviewScreen({
       {isTextModalOpen && (
         <TextModal 
           initialText={questionText}
-          showCancel={step === "mosaic"}
+          showCancel={step === "mosaic"} // 현재 step에 따라 취소 버튼 표시 여부 제어
           onClose={() => { 
             setIsTextModalOpen(false); 
             setStep("mosaic");
