@@ -22,7 +22,7 @@ interface FloatingCardsProps {
 }
 
 export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
-  // 🔄 3D 원형 띠 자동 회전을 위한 상태 및 참조
+  // 🔄 반원 띠 자동 회전을 위한 상태 및 참조
   const [autoAngle, setAutoAngle] = useState(0)
   const angleRef = useRef(0)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -341,7 +341,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             >
               <Image src={activePost.imageData} alt="Current Style" fill className="object-cover pointer-events-none" unoptimized />
 
-              {/* ⬆️ 위로 스와이프: 주황색 그라데이션 & ThumbsUp 아이콘 */}
               {swipeOffset < -20 && (
                 <div 
                   className="absolute inset-0 pointer-events-none flex items-center justify-center bg-gradient-to-b from-[#FF6200]/90 via-[#FF6200]/50 to-transparent transition-opacity z-20"
@@ -353,7 +352,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 </div>
               )}
 
-              {/* ⬇️ 아래로 스와이프: 검정색 그라데이션 & ThumbsDown 아이콘 */}
               {swipeOffset > 20 && (
                 <div 
                   className="absolute inset-0 pointer-events-none flex items-end justify-center pb-24 bg-gradient-to-t from-black/90 via-black/50 to-transparent transition-opacity z-20"
@@ -462,7 +460,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   }
 
   // -------------------------------------------------------------
-  // 🌌 [2] 3D 원형 띠(Carousel) 레이아웃
+  // 🌌 [2] 반원형 부채꼴 (Semi-Circle Arc) 레이아웃
   // -------------------------------------------------------------
   
   // 현재 띠가 일시정지 상태인지 판별 (새 사진이 업로드되어 합류 중일 때)
@@ -475,55 +473,47 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     >
       <div 
         className="absolute inset-y-0 left-0 w-full h-[calc(100vh-80px)] pointer-events-none flex items-center justify-center"
-        style={{ 
-          perspective: "1200px",
-          transformStyle: "preserve-3d"
-        }}
       >
         {userPosts.map((post, i) => {
           const totalCards = userPosts.length;
           
-          // 💡 카드 너비(220px) + 간격(8px) = 정확히 228px을 현의 길이(Chord Length)로 설정
-          const CARD_WIDTH = 220;
-          const GAP = 8;
-          const CHORD = CARD_WIDTH + GAP; 
-          const HALF_CHORD = CHORD / 2; // 114
-
-          // 💡 화면 가로 사이즈(389px)보다 훨씬 큰 거대한 원의 최소 반지름 보장
-          let radius = 650;
-
-          // 💡 카드가 많아져서 650px 원에 8px 간격으로 전부 들어가지 않을 경우, 완벽한 원을 그리기 위해 반지름을 확장
-          if (totalCards > 17) {
-            radius = HALF_CHORD / Math.sin(Math.PI / totalCards);
-          }
-
-          // 💡 정확히 8px 간격을 유지하기 위해 요구되는 3D 배치 각도를 계산
-          const anglePerCard = 2 * Math.asin(HALF_CHORD / radius) * (180 / Math.PI);
-          
+          // 💡 카드가 화면에 골고루 분포되도록 카드 수에 맞춰 360도를 분할합니다.
+          const anglePerCard = 360 / totalCards;
           const cardBaseAngle = anglePerCard * i;
           const currentAngle = cardBaseAngle + autoAngle;
           
           const radian = (currentAngle * Math.PI) / 180;
           const cosVal = Math.cos(radian);
+          const sinVal = Math.sin(radian);
+
+          // 💡 부채꼴 아치를 위한 2D 매핑
+          // sin이 음수일 때(각도가 0~-180도로 줄어들 때) 카드가 왼쪽(-X)으로 이동하며, 
+          // cos이 1에서 -1로 갈수록 위(-Y)로 이동하고 크기가 작아집니다.
+          const x = -180 * sinVal;         
+          const y = -140 * (1 - cosVal);   
+          const scale = 0.6 + 0.4 * cosVal; 
+          const rotateZ = -15 * sinVal;    
 
           const age = tick - post.createdAt;
           const isNewUpload = i === 0 && age < 2500;
 
-          let transformStr = `translateZ(-${radius}px) rotateY(${currentAngle}deg) translateZ(${radius}px)`;
+          // 깊이(z-index)와 투명도를 cos 값에 비례하여 처리 (뒤로 갈수록 가려짐)
+          let transformStr = `translate3d(${x}px, ${y}px, 0) scale(${scale}) rotateZ(${rotateZ}deg)`;
           let zIndexVal = Math.round(cosVal * 100);
-          let opacityVal = cosVal > -0.2 ? 1 : 0.4;
+          let opacityVal = Math.max(0, Math.min(1, 1 + cosVal * 1.5));
           let transitionStr = "none";
 
           if (isNewUpload) {
+            // 업로드 시 아래에서 위로 날아오며 아치 궤도에 합류하는 애니메이션
             const progress = Math.min(1, age / 2000);
             const ease = 1 - Math.pow(1 - progress, 3);
             
-            const currentRadiusNeg = 0 + (-radius - 0) * ease;
-            const currentRotateY = 0 + (currentAngle - 0) * ease;
-            const currentRadiusPos = 400 + (radius - 400) * ease;
-            const currentScale = 1.5 + (1 - 1.5) * ease;
+            const currentX = 0 + (x - 0) * ease;
+            const currentY = 400 + (y - 400) * ease; 
+            const currentScale = 1.5 + (scale - 1.5) * ease;
+            const currentRotate = 0 + (rotateZ - 0) * ease;
 
-            transformStr = `translateZ(${currentRadiusNeg}px) rotateY(${currentRotateY}deg) translateZ(${currentRadiusPos}px) scale(${currentScale})`;
+            transformStr = `translate3d(${currentX}px, ${currentY}px, 0) scale(${currentScale}) rotateZ(${currentRotate}deg)`;
             zIndexVal = 2000; 
             opacityVal = 1;
           } else if (isCarouselPaused) {
@@ -543,10 +533,9 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 zIndex: zIndexVal,
                 opacity: opacityVal,
                 willChange: "transform, opacity",
-                backfaceVisibility: "hidden"
               }}
             >
-              <div className="relative w-full h-full bg-white rounded-none overflow-hidden shadow-[0_12px_32px_rgba(0,0,0,0.06)] border border-zinc-200/40">
+              <div className="relative w-full h-full bg-white rounded-xl overflow-hidden shadow-[0_12px_32px_rgba(0,0,0,0.08)] border border-zinc-200/40">
                 <Image 
                   src={post.imageData} 
                   alt="Style Space Element" 
