@@ -31,16 +31,28 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   const prevPostsLength = useRef(userPosts.length)
 
   useEffect(() => {
-    // 💡 핵심: 새 사진이 업로드되면 띠 전체가 '정면(가운데)'으로 스르륵 정렬되도록 각도 보정
     if (userPosts.length > prevPostsLength.current && prevPostsLength.current > 0) {
-      const current = angleRef.current;
-      // 가장 가까운 360도의 배수를 찾아 정면으로 정렬합니다.
-      const nearest360 = Math.round(current / 360) * 360;
-      angleRef.current = nearest360;
-      setAutoAngle(angleRef.current);
+      const totalCards = userPosts.length
+      const CARD_WIDTH = 220
+      const GAP = 124
+      const HALF_CHORD = (CARD_WIDTH + GAP) / 2
+      
+      let radius = 800
+      if (totalCards > 14) {
+        radius = HALF_CHORD / Math.sin(Math.PI / totalCards)
+      }
+      
+      const anglePerCard = 2 * Math.asin(HALF_CHORD / radius) * (180 / Math.PI)
+      
+      // 💡 핵심 수정: 띠 전체를 억지로 중앙으로 회전시키는 로직(nearest360) 제거
+      // 대신 새 카드가 들어갈 인덱스 0번 자리의 각도만큼만 축을 뒤로 밀어줍니다.
+      // 이렇게 하면 기존 사진들은 시각적으로 전혀 이동하지 않고 그 자리에 일시 정지하며,
+      // 새 사진이 띠의 자연스러운 빈 공간(중간)으로 스며드는 연출이 완성됩니다.
+      angleRef.current -= anglePerCard
+      setAutoAngle(angleRef.current)
     }
-    prevPostsLength.current = userPosts.length;
-    userPostsRef.current = userPosts;
+    prevPostsLength.current = userPosts.length
+    userPostsRef.current = userPosts
   }, [userPosts])
 
   const [selectedPost, setSelectedPost] = useState<Post | null>(null)
@@ -518,7 +530,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
           let transitionStr = "none"
 
-          // 💡 정지 기간(3초) 동안 '기존 사진'들은 부드럽게 옆으로 밀려나며 공간을 열어줍니다.
+          // 카드가 추가되어 전체 반경이 넓어질 경우, 기존 카드들이 스르륵 움직이도록 트랜지션 보장
           if (isCarouselPaused && !isNewUpload) {
             transitionStr = "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s ease"
           }
@@ -527,7 +539,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             transitionStr = "none"
 
             if (age < 1500) {
-              // ⭐️ Phase 1 (0~1.5초): 화면 한가운데서 큰 크기로 대기합니다. (뒤에서는 공간이 열리는 중)
+              // ⭐️ Phase 1 (0~1.5초): 화면 한가운데서 큰 크기로 대기합니다. 
               const introProgress = Math.min(1, age / 400) // 0.4초 만에 팝업
               const ease = 1 - Math.pow(1 - introProgress, 3)
               const currentScale = 0.8 + (1.1 - 0.8) * ease
@@ -536,7 +548,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
               zIndexVal = 2000 
               opacityVal = introProgress
             } else {
-              // ⭐️ Phase 2 (1.5초~3초): 열려있는 빈 공간(가운데 슬롯)으로 스며들어 파고듭니다.
+              // ⭐️ Phase 2 (1.5초~3초): 열려있는 빈 공간으로 스며들어 파고듭니다.
               const progress = Math.min(1, (age - 1500) / 1200) // 1.2초 동안 스며듦
               const ease = 1 - Math.pow(1 - progress, 3)
               
