@@ -22,10 +22,12 @@ interface FloatingCardsProps {
 }
 
 export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
+  // 🔄 커버플로우 자동 회전을 위한 상태 및 참조
   const [autoAngle, setAutoAngle] = useState(0)
   const angleRef = useRef(0)
   const containerRef = useRef<HTMLDivElement>(null)
   
+  // ⏱️ 애니메이션 프레임 동기화 및 업로드 모션 관리를 위한 시간 상태
   const [tick, setTick] = useState(0)
   const userPostsRef = useRef(userPosts)
 
@@ -33,11 +35,13 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     userPostsRef.current = userPosts
   }, [userPosts])
 
+  // 📝 피드백 페이지 모드 상태 관리
   const [selectedPost, setSelectedPost] = useState<Post | null>(null)
   const [feedbackQueue, setFeedbackQueue] = useState<Post[]>([])
   const [currentQueueIndex, setCurrentQueueIndex] = useState(0)
   const [showTutorial, setShowTutorial] = useState(true)
 
+  // 🖐️ 스와이프 물리 좌표 및 드래그 상태 (상하 이동)
   const [dragStartY, setDragStartY] = useState(0)
   const [swipeOffset, setSwipeOffset] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
@@ -46,6 +50,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   const [isResetting, setIsResetting] = useState(false)
   const [showExitModal, setShowExitModal] = useState(false)
 
+  // 🔔 쭈템프 획득 상단 알림창 상태 관리 및 너비 동기화
   const [showStampToast, setShowStampToast] = useState(false)
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null)
   const imageContainerRef = useRef<HTMLDivElement>(null)
@@ -93,6 +98,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     return () => observer.disconnect()
   }, [selectedPost])
 
+  // 🔄 띠 회전 & 업로드 정지 로직 연동 루프 (동적 속도 적용 완료)
   useEffect(() => {
     let animationFrameId: number
 
@@ -102,8 +108,14 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
         ? now - userPostsRef.current[0].createdAt 
         : 9999
       
+      // 💡 업로드 후 2.5초가 지나면 다시 회전 시작
       if (firstPostAge >= 2500) {
-        angleRef.current -= 0.15 
+        const cardCount = userPostsRef.current.length > 0 ? userPostsRef.current.length : 1;
+        const angleStep = 360 / cardCount;
+        
+        // 💡 핵심: 사진이 적든 많든 무조건 "약 2.5초 당 1장"씩 넘어가도록 속도 동적 계산
+        const speed = angleStep / 150; 
+        angleRef.current -= speed;
       }
       
       setAutoAngle(angleRef.current)
@@ -231,14 +243,17 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
   if (userPosts.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full w-full text-zinc-400 bg-white">
-        <div className="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-3">📸</div>
+      <div className="flex flex-col items-center justify-center h-full w-full text-zinc-400 bg-[#f3f3f1]">
+        <div className="w-16 h-16 rounded-full bg-zinc-200 flex items-center justify-center mb-3">📸</div>
         <p className="text-sm font-medium">아직 업로드된 스타일이 없습니다.</p>
         <p className="text-xs text-zinc-400 mt-1">하단 카메라 버튼을 눌러 첫 사진을 올려보세요!</p>
       </div>
     )
   }
 
+  // -------------------------------------------------------------
+  // 📱 [1] 스와이프 피드백 모드 레이아웃
+  // -------------------------------------------------------------
   if (selectedPost) {
     const activePost = currentQueueIndex < feedbackQueue.length ? feedbackQueue[currentQueueIndex] : feedbackQueue[feedbackQueue.length - 1]
     const nextPost = currentQueueIndex + 1 < feedbackQueue.length ? feedbackQueue[currentQueueIndex + 1] : null
@@ -251,6 +266,21 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     return (
       <div className="fixed inset-0 bg-white z-50 flex flex-col justify-between overflow-hidden">
         
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          {swipeOffset < -20 && (
+            <div 
+              className="absolute inset-0 bg-gradient-to-b from-[#FF6200]/60 via-[#FF6200]/20 to-transparent transition-opacity" 
+              style={{ opacity: Math.min(1, Math.abs(swipeOffset) / 100) }} 
+            />
+          )}
+          {swipeOffset > 20 && (
+            <div 
+              className="absolute inset-0 bg-gradient-to-t from-[#000000]/80 via-[#000000]/40 to-transparent transition-opacity" 
+              style={{ opacity: Math.min(1, swipeOffset / 100) }} 
+            />
+          )}
+        </div>
+
         <div 
           className={`absolute top-16 left-0 w-full z-50 flex justify-center px-4 pointer-events-none transition-all duration-300 ease-out ${
             showStampToast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
@@ -330,28 +360,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
               }}
             >
               <Image src={activePost.imageData} alt="Current Style" fill className="object-cover pointer-events-none" unoptimized />
-
-              {swipeOffset < -20 && (
-                <div 
-                  className="absolute inset-0 pointer-events-none flex items-center justify-center bg-gradient-to-b from-[#FF6200]/90 via-[#FF6200]/50 to-transparent transition-opacity z-20"
-                  style={{ opacity: Math.min(1, Math.abs(swipeOffset) / 100) }}
-                >
-                  <div className="w-[80px] h-[80px] rounded-full border-[4px] border-white flex items-center justify-center shadow-lg bg-transparent">
-                    <ThumbsUp className="w-10 h-10 text-white" strokeWidth={2.5} />
-                  </div>
-                </div>
-              )}
-
-              {swipeOffset > 20 && (
-                <div 
-                  className="absolute inset-0 pointer-events-none flex items-end justify-center pb-24 bg-gradient-to-t from-black/90 via-black/50 to-transparent transition-opacity z-20"
-                  style={{ opacity: Math.min(1, swipeOffset / 100) }}
-                >
-                  <div className="w-[80px] h-[80px] rounded-full border-[4px] border-white flex items-center justify-center shadow-lg bg-transparent">
-                    <ThumbsDown className="w-10 h-10 text-white" strokeWidth={2.5} />
-                  </div>
-                </div>
-              )}
 
               {activePost.poll && activePost.poll.length > 0 && (
                 <div 
@@ -449,6 +457,10 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     )
   }
 
+  // -------------------------------------------------------------
+  // 🌌 [2] 쫀쫀한 정통 커버플로우(Cover Flow) 애니메이션 
+  // -------------------------------------------------------------
+  
   const isCarouselPaused = userPosts.length > 0 && (tick - userPosts[0].createdAt) < 2500
 
   return (
@@ -459,7 +471,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
       <div 
         className="absolute inset-y-0 left-0 w-full h-[calc(100vh-80px)] pointer-events-none flex items-center justify-center"
         style={{ 
-          perspective: "1000px",
+          perspective: "1200px", // 원근감을 조금 더 사실적으로 설정
           transformStyle: "preserve-3d"
         }}
       >
@@ -475,21 +487,30 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
           const progress = rawAngle / anglePerCard; 
           const clampedProgress = Math.max(-1, Math.min(1, progress));
-
-          // 간격 및 깊이 조절 (스태킹 효과 강화)
-          const stackGap = 35; // 겹쳐지는 카드 간격
-          const centerOffset = 160; // 중앙 카드 주변 여백
           
-          const translateX = progress * stackGap + clampedProgress * centerOffset;
-          const rotateY = clampedProgress * -65; 
-          
-          // Z축 깊이를 조절하여 겹치는 카드의 원근감을 확실히 부여
-          const translateZ = Math.abs(clampedProgress) * -220 - Math.abs(progress) * 15;
-          const scale = 1 - Math.abs(clampedProgress) * 0.15;
+          // 💡 핵심: 중앙에서 옆으로 빠질 때 단순히 선형으로 밋밋하게 이동하지 않고, 
+          // 삼각함수(Easing)를 이용해 찰지게 스냅(Snap)되도록 만듭니다.
+          const easeProgress = Math.sin((clampedProgress * Math.PI) / 2);
 
+          // 클래식 커버플로우 매직 넘버 세팅
+          const CENTER_OFFSET = 130;    // 중앙 정면 카드와 첫 번째 스택 카드의 거리
+          const STACK_GAP = 25;         // 겹쳐진 카드들 사이의 촘촘한 간격
+          const MAX_ROTATE_Y = 65;      // 확 꺾이는 최대 각도
+          const MAX_TRANSLATE_Z = -200; // 깊이감(양옆 카드가 얼마나 뒤로 가는지)
+
+          // 이징(easeProgress)이 적용된 계산으로 위치와 각도를 맵핑
+          const translateX = (progress * STACK_GAP) + (easeProgress * CENTER_OFFSET);
+          const rotateY = easeProgress * -MAX_ROTATE_Y; 
+          
+          // Z축 깊이를 조절하여 양옆 카드들이 스케일 축소 없이 자연스럽게 작아보이도록 유도
+          const translateZ = Math.abs(easeProgress) * MAX_TRANSLATE_Z - Math.abs(progress) * 10;
+          const scale = 1; 
+
+          // 회전 시 뒤로 넘어가는 카드들의 페이드 아웃 처리
           let opacityVal = 1 - Math.pow(Math.abs(rawAngle) / 180, 2.5);
           opacityVal = Math.max(0, Math.min(1, opacityVal));
           
+          // 중앙 카드가 가장 앞으로 오고, 양옆으로 갈수록 z-index가 떨어짐
           let zIndexVal = 1000 - Math.round(Math.abs(progress) * 100);
 
           const age = tick - post.createdAt;
@@ -499,6 +520,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           let transitionStr = "none";
 
           if (isNewUpload) {
+            // 업로드 시 화면 밖 아래에서 위로 날아와서 합류하는 궤도 애니메이션
             const progressAnim = Math.min(1, age / 2000);
             const ease = 1 - Math.pow(1 - progressAnim, 3);
             
@@ -528,7 +550,8 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 zIndex: zIndexVal,
                 opacity: opacityVal,
                 willChange: "transform, opacity",
-                WebkitBoxReflect: "below 4px linear-gradient(to bottom, transparent 65%, rgba(0,0,0,0.6))"
+                // 💡 바닥 반사 효과를 원본 영상처럼 은은하고 선명하게 조절
+                WebkitBoxReflect: "below 2px linear-gradient(to bottom, transparent 65%, rgba(0,0,0,0.5))"
               }}
             >
               <div className="relative w-full h-full bg-white rounded-none overflow-hidden shadow-[0_12px_32px_rgba(0,0,0,0.15)] border border-zinc-200/40">
