@@ -476,7 +476,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   }
 
   // -------------------------------------------------------------
-  // 🌌 [2] 거대 원형 띠 (Carousel) 레이아웃
+  // 🌌 [2] 원통형(Carousel) 레이아웃 - 뒤쪽 카드 렌더링 포함
   // -------------------------------------------------------------
   
   const isCarouselPaused = userPosts.length > 0 && (tick - userPosts[0].createdAt) < 2500
@@ -501,7 +501,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           const CHORD = CARD_WIDTH + GAP; 
           const HALF_CHORD = CHORD / 2; // 118
 
-          // 💡 원의 지름(반경)을 1000px로 수정했습니다.
+          // 💡 원의 지름(반경) 1000px 설정
           let radius = 1000;
 
           // 카드가 많아져서 원형 둘레를 초과할 경우에만 동적으로 추가 확장
@@ -524,8 +524,9 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           let transformStr = `translateZ(-${radius}px) rotateY(${currentAngle}deg) translateZ(${radius}px)`;
           let zIndexVal = Math.round(cosVal * 100);
           
-          let opacityVal = cosVal > 0.3 ? 1 : 1 + cosVal * 1.5;
-          opacityVal = Math.max(0, Math.min(1, opacityVal));
+          // 💡 화면 뒤로 넘어간 카드도 보이도록 투명도(opacity) 하한선을 높여줍니다. (최소 20% 유지)
+          let opacityVal = cosVal > 0.6 ? 1 : 0.2 + ((cosVal + 1) / 1.6) * 0.8;
+          opacityVal = Math.max(0.2, Math.min(1, opacityVal));
 
           let transitionStr = "none";
 
@@ -559,8 +560,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 zIndex: zIndexVal,
                 opacity: opacityVal,
                 willChange: "transform, opacity",
-                backfaceVisibility: "hidden",
-                // 💡 고급스러운 바닥 반사(Reflection) 효과 유지
+                // 💡 backfaceVisibility: "hidden" 설정을 제거하여 뒷모습(반전된 형태)이 보이도록 했습니다.
                 WebkitBoxReflect: "below 4px linear-gradient(to bottom, transparent 65%, rgba(0,0,0,0.5))"
               }}
             >
