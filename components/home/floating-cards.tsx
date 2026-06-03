@@ -482,15 +482,16 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           const totalCards = userPosts.length;
           
           const CARD_WIDTH = 220;
-          // 💡 카드 간격을 128px로 수정했습니다.
-          const GAP = 128;
+          // 💡 카드 간격을 124px로 수정했습니다.
+          const GAP = 124;
           const CHORD = CARD_WIDTH + GAP; 
-          const HALF_CHORD = CHORD / 2; // 174
+          const HALF_CHORD = CHORD / 2; // 172
 
-          let radius = 1000;
+          // 💡 원의 지름(반경)을 800px로 수정했습니다.
+          let radius = 800;
 
-          // 간격이 더 넓어졌으므로 17장 이상일 때부터 반지름이 늘어나도록 기준을 조정했습니다.
-          if (totalCards > 17) {
+          // 간격과 반지름에 맞춰 14장 이상일 때부터 반지름이 늘어나도록 기준을 조정했습니다.
+          if (totalCards > 14) {
             radius = HALF_CHORD / Math.sin(Math.PI / totalCards);
           }
 
