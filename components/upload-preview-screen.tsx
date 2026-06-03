@@ -201,6 +201,7 @@ export function UploadPreviewScreen({
       return
     }
     setIsUploading(true)
+    
     try {
       const container = containerRef.current
       if (!container) {
@@ -211,7 +212,8 @@ export function UploadPreviewScreen({
       if (typeof window === "undefined") return
 
       const img = new window.Image()
-      img.crossOrigin = "anonymous"
+      // 💡 iOS Safari 에러 해결: Base64 이미지에 crossOrigin을 넣지 않아야 안전하게 변환됩니다.
+      
       await new Promise((resolve, reject) => {
         img.onload = resolve
         img.onerror = reject
@@ -240,17 +242,21 @@ export function UploadPreviewScreen({
       if (strokes.length > 0 || currentStroke.length > 0) {
         const strokeScale = outWidth / clientWidth
         const allStrokes = currentStroke.length > 0 ? [...strokes, currentStroke] : strokes
+        
         const blurCanvas = document.createElement("canvas")
         blurCanvas.width = outWidth
         blurCanvas.height = outHeight
         const blurCtx = blurCanvas.getContext("2d")
+        
         if (blurCtx) {
           blurCtx.filter = `blur(${16 * strokeScale}px)`
           blurCtx.drawImage(img, sx, sy, sw, sh, 0, 0, outWidth, outHeight)
+          
           const maskCanvas = document.createElement("canvas")
           maskCanvas.width = outWidth
           maskCanvas.height = outHeight
           const maskCtx = maskCanvas.getContext("2d")
+          
           if (maskCtx) {
             maskCtx.strokeStyle = "black"
             maskCtx.fillStyle = "black"
@@ -259,6 +265,7 @@ export function UploadPreviewScreen({
             maskCtx.lineJoin = "round"
             maskCtx.shadowColor = "black"
             maskCtx.shadowBlur = 8 * strokeScale
+            
             allStrokes.forEach(stroke => {
               if (stroke.length === 0) return
               if (stroke.length === 1) {
@@ -272,10 +279,12 @@ export function UploadPreviewScreen({
                 maskCtx.stroke()
               }
             })
+            
             maskCtx.shadowColor = "transparent"
             maskCtx.shadowBlur = 0
             maskCtx.globalCompositeOperation = "source-in"
             maskCtx.drawImage(blurCanvas, 0, 0)
+            
             ctx.globalCompositeOperation = "source-over"
             ctx.drawImage(maskCanvas, 0, 0)
           }
@@ -302,10 +311,12 @@ export function UploadPreviewScreen({
           currentY += fontSize * 1.3 
         })
       }
+      
       const mergedImageData = canvas.toDataURL("image/jpeg", 0.9)
       onUpload(questionText, mergedImageData, pollOptions)
+      
     } catch (e) {
-      console.error(e)
+      console.error("iOS Safari Canvas Error:", e)
       onUpload(questionText, capturedImage, pollOptions)
     } finally {
       setIsUploading(false)
