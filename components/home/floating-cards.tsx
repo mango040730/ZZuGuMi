@@ -22,12 +22,10 @@ interface FloatingCardsProps {
 }
 
 export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
-  // 🔄 3D 원형 띠 자동 회전을 위한 상태 및 참조
   const [autoAngle, setAutoAngle] = useState(0)
   const angleRef = useRef(0)
   const containerRef = useRef<HTMLDivElement>(null)
   
-  // ⏱️ 애니메이션 프레임 동기화 및 업로드 모션 관리를 위한 시간 상태
   const [tick, setTick] = useState(0)
   const userPostsRef = useRef(userPosts)
 
@@ -35,13 +33,11 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     userPostsRef.current = userPosts
   }, [userPosts])
 
-  // 📝 피드백 페이지 모드 상태 관리
   const [selectedPost, setSelectedPost] = useState<Post | null>(null)
   const [feedbackQueue, setFeedbackQueue] = useState<Post[]>([])
   const [currentQueueIndex, setCurrentQueueIndex] = useState(0)
   const [showTutorial, setShowTutorial] = useState(true)
 
-  // 🖐️ 스와이프 물리 좌표 및 드래그 상태 (상하 이동)
   const [dragStartY, setDragStartY] = useState(0)
   const [swipeOffset, setSwipeOffset] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
@@ -50,7 +46,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   const [isResetting, setIsResetting] = useState(false)
   const [showExitModal, setShowExitModal] = useState(false)
 
-  // 🔔 쭈템프 획득 상단 알림창 상태 관리 및 너비 동기화
   const [showStampToast, setShowStampToast] = useState(false)
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null)
   const imageContainerRef = useRef<HTMLDivElement>(null)
@@ -98,7 +93,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     return () => observer.disconnect()
   }, [selectedPost])
 
-  // 🔄 띠 회전 & 업로드 정지 로직 연동 루프
   useEffect(() => {
     let animationFrameId: number
 
@@ -108,7 +102,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
         ? now - userPostsRef.current[0].createdAt 
         : 9999
       
-      // 💡 업로드 후 2.5초가 지나면 다시 회전 시작
       if (firstPostAge >= 2500) {
         angleRef.current -= 0.08 
       }
@@ -246,9 +239,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     )
   }
 
-  // -------------------------------------------------------------
-  // 📱 [1] 스와이프 피드백 모드 레이아웃
-  // -------------------------------------------------------------
   if (selectedPost) {
     const activePost = currentQueueIndex < feedbackQueue.length ? feedbackQueue[currentQueueIndex] : feedbackQueue[feedbackQueue.length - 1]
     const nextPost = currentQueueIndex + 1 < feedbackQueue.length ? feedbackQueue[currentQueueIndex + 1] : null
@@ -474,10 +464,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     )
   }
 
-  // -------------------------------------------------------------
-  // 🌌 [2] 원통형(Carousel) 레이아웃 - 뒤쪽 카드 렌더링 포함
-  // -------------------------------------------------------------
-  
   const isCarouselPaused = userPosts.length > 0 && (tick - userPosts[0].createdAt) < 2500
 
   return (
@@ -496,15 +482,15 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           const totalCards = userPosts.length;
           
           const CARD_WIDTH = 220;
-          // 💡 카드 간격을 기존 16에서 4배 늘린 64로 수정했습니다.
-          const GAP = 64;
+          // 💡 카드 간격을 128px로 수정했습니다.
+          const GAP = 128;
           const CHORD = CARD_WIDTH + GAP; 
-          const HALF_CHORD = CHORD / 2; // 142
+          const HALF_CHORD = CHORD / 2; // 174
 
           let radius = 1000;
 
-          // 간격이 넓어졌으므로 20장 이상일 때부터 반지름이 늘어나도록 기준을 낮췄습니다.
-          if (totalCards > 20) {
+          // 간격이 더 넓어졌으므로 17장 이상일 때부터 반지름이 늘어나도록 기준을 조정했습니다.
+          if (totalCards > 17) {
             radius = HALF_CHORD / Math.sin(Math.PI / totalCards);
           }
 
@@ -523,7 +509,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           let transformStr = `translateZ(-${radius}px) rotateY(${currentAngle}deg) translateZ(${radius}px)`;
           let zIndexVal = Math.round(cosVal * 100);
           
-          // 화면 뒤로 넘어간 카드도 보이도록 투명도 설정
           let opacityVal = cosVal > 0.6 ? 1 : 0.2 + ((cosVal + 1) / 1.6) * 0.8;
           opacityVal = Math.max(0.2, Math.min(1, opacityVal));
 
