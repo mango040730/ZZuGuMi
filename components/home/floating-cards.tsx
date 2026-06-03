@@ -22,7 +22,7 @@ interface FloatingCardsProps {
 }
 
 export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
-  // 🔄 거대 3D 원형 띠 자동 회전을 위한 상태 및 참조
+  // 🔄 3D 원형 띠 자동 회전을 위한 상태 및 참조
   const [autoAngle, setAutoAngle] = useState(0)
   const angleRef = useRef(0)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -110,8 +110,8 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
       
       // 💡 업로드 후 2.5초가 지나면 다시 회전 시작
       if (firstPostAge >= 2500) {
-        // 원의 지름이 3배가 되었으므로 시각적인 이동 속도를 편안하게 맞추기 위해 회전 각도를 줄임
-        angleRef.current -= 0.05 
+        // 지름이 1000px로 줄었으므로 회전 속도를 0.08 정도로 맞춰줍니다.
+        angleRef.current -= 0.08 
       }
       
       setAutoAngle(angleRef.current)
@@ -476,7 +476,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   }
 
   // -------------------------------------------------------------
-  // 🌌 [2] 거대 원형 띠 (Massive Carousel) 레이아웃
+  // 🌌 [2] 거대 원형 띠 (Carousel) 레이아웃
   // -------------------------------------------------------------
   
   const isCarouselPaused = userPosts.length > 0 && (tick - userPosts[0].createdAt) < 2500
@@ -501,11 +501,11 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           const CHORD = CARD_WIDTH + GAP; 
           const HALF_CHORD = CHORD / 2; // 118
 
-          // 💡 원의 지름(반경)을 기존 650에서 1950으로 3배 키웠습니다.
-          let radius = 1950;
+          // 💡 원의 지름(반경)을 1000px로 수정했습니다.
+          let radius = 1000;
 
-          // 카드가 많아져서 이 거대한 원형 둘레도 초과할 경우에만 동적으로 추가 확장
-          if (totalCards > 50) {
+          // 카드가 많아져서 원형 둘레를 초과할 경우에만 동적으로 추가 확장
+          if (totalCards > 25) {
             radius = HALF_CHORD / Math.sin(Math.PI / totalCards);
           }
 
@@ -521,11 +521,9 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           const age = tick - post.createdAt;
           const isNewUpload = i === 0 && age < 2500;
 
-          // Z축을 기준으로 밀어내고 Y축으로 회전한 후, 중심을 맞추기 위해 다시 Z축으로 당깁니다.
           let transformStr = `translateZ(-${radius}px) rotateY(${currentAngle}deg) translateZ(${radius}px)`;
           let zIndexVal = Math.round(cosVal * 100);
           
-          // 💡 화면 밖으로 나가도 자연스럽게 보일 수 있도록, 카드가 뒷면으로 상당히 많이 넘어갈 때에만 서서히 투명도를 줍니다.
           let opacityVal = cosVal > 0.3 ? 1 : 1 + cosVal * 1.5;
           opacityVal = Math.max(0, Math.min(1, opacityVal));
 
@@ -562,7 +560,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 opacity: opacityVal,
                 willChange: "transform, opacity",
                 backfaceVisibility: "hidden",
-                // 💡 고급스러운 바닥 반사(Reflection) 효과 추가
+                // 💡 고급스러운 바닥 반사(Reflection) 효과 유지
                 WebkitBoxReflect: "below 4px linear-gradient(to bottom, transparent 65%, rgba(0,0,0,0.5))"
               }}
             >
