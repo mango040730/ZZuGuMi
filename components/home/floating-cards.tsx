@@ -22,7 +22,7 @@ interface FloatingCardsProps {
 }
 
 export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
-  // 🔄 반원 띠 자동 회전을 위한 상태 및 참조
+  // 🔄 커버플로우 자동 회전을 위한 상태 및 참조
   const [autoAngle, setAutoAngle] = useState(0)
   const angleRef = useRef(0)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -460,7 +460,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   }
 
   // -------------------------------------------------------------
-  // 🌌 [2] 반원형 부채꼴 (Semi-Circle Arc) 레이아웃
+  // 🌌 [2] 커버플로우(Cover Flow) 3D 레이아웃
   // -------------------------------------------------------------
   
   // 현재 띠가 일시정지 상태인지 판별 (새 사진이 업로드되어 합류 중일 때)
@@ -469,51 +469,64 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   return (
     <div 
       ref={containerRef}
-      className="relative w-full h-full overflow-hidden bg-white touch-none"
+      className="relative w-full h-full overflow-hidden bg-[#f3f3f1] touch-none"
     >
       <div 
         className="absolute inset-y-0 left-0 w-full h-[calc(100vh-80px)] pointer-events-none flex items-center justify-center"
+        style={{ 
+          perspective: "1000px",
+          transformStyle: "preserve-3d"
+        }}
       >
         {userPosts.map((post, i) => {
           const totalCards = userPosts.length;
+          const anglePerCard = totalCards > 0 ? 360 / totalCards : 360;
           
-          // 💡 카드가 화면에 골고루 분포되도록 카드 수에 맞춰 360도를 분할합니다.
-          const anglePerCard = 360 / totalCards;
           const cardBaseAngle = anglePerCard * i;
-          const currentAngle = cardBaseAngle + autoAngle;
+          let rawAngle = (cardBaseAngle + autoAngle) % 360;
           
-          const radian = (currentAngle * Math.PI) / 180;
-          const cosVal = Math.cos(radian);
-          const sinVal = Math.sin(radian);
+          if (rawAngle > 180) rawAngle -= 360;
+          if (rawAngle < -180) rawAngle += 360;
 
-          // 💡 부채꼴 아치를 위한 2D 매핑
-          // sin이 음수일 때(각도가 0~-180도로 줄어들 때) 카드가 왼쪽(-X)으로 이동하며, 
-          // cos이 1에서 -1로 갈수록 위(-Y)로 이동하고 크기가 작아집니다.
-          const x = -180 * sinVal;         
-          const y = -140 * (1 - cosVal);   
-          const scale = 0.6 + 0.4 * cosVal; 
-          const rotateZ = -15 * sinVal;    
+          // 💡 Cover Flow 수식 매핑
+          // progress는 중앙(0)에서부터 왼쪽(-) 혹은 오른쪽(+)으로 몇 번째에 위치하는지를 나타냅니다.
+          const progress = rawAngle / anglePerCard; 
+          const clampedProgress = Math.max(-1, Math.min(1, progress));
+
+          const gap = 70; // 겹쳐지는 카드 간격
+          const centerOffset = 130; // 중앙 카드로부터 양옆 카드를 얼마나 밀어낼지 결정
+
+          // 위치(X), 각도(Y), 깊이(Z), 크기(Scale) 계산
+          const translateX = progress * gap + clampedProgress * centerOffset;
+          const rotateY = clampedProgress * -55; 
+          const translateZ = Math.abs(clampedProgress) * -180 - Math.abs(progress) * 20;
+          const scale = 1 - Math.abs(clampedProgress) * 0.1;
+
+          // 한 바퀴 돌아서 뒤로 넘어갈 때 자연스럽게 페이드아웃 되도록 투명도 조정
+          let opacityVal = 1 - Math.pow(Math.abs(rawAngle) / 180, 4);
+          opacityVal = Math.max(0, Math.min(1, opacityVal));
+          
+          // 앞쪽 카드일수록 z-index가 높도록 설정
+          let zIndexVal = 1000 - Math.round(Math.abs(progress) * 100);
 
           const age = tick - post.createdAt;
           const isNewUpload = i === 0 && age < 2500;
 
-          // 깊이(z-index)와 투명도를 cos 값에 비례하여 처리 (뒤로 갈수록 가려짐)
-          let transformStr = `translate3d(${x}px, ${y}px, 0) scale(${scale}) rotateZ(${rotateZ}deg)`;
-          let zIndexVal = Math.round(cosVal * 100);
-          let opacityVal = Math.max(0, Math.min(1, 1 + cosVal * 1.5));
+          let transformStr = `translate3d(${translateX}px, 0, ${translateZ}px) rotateY(${rotateY}deg) scale(${scale})`;
           let transitionStr = "none";
 
           if (isNewUpload) {
-            // 업로드 시 아래에서 위로 날아오며 아치 궤도에 합류하는 애니메이션
-            const progress = Math.min(1, age / 2000);
-            const ease = 1 - Math.pow(1 - progress, 3);
+            // 업로드 시 화면 밖 아래에서 위로 날아와서 합류하는 애니메이션
+            const progressAnim = Math.min(1, age / 2000);
+            const ease = 1 - Math.pow(1 - progressAnim, 3);
             
-            const currentX = 0 + (x - 0) * ease;
-            const currentY = 400 + (y - 400) * ease; 
+            const currentX = 0 + (translateX - 0) * ease;
+            const currentY = 400 + (0 - 400) * ease; 
+            const currentZ = 400 + (translateZ - 400) * ease; 
+            const currentRotate = 0 + (rotateY - 0) * ease;
             const currentScale = 1.5 + (scale - 1.5) * ease;
-            const currentRotate = 0 + (rotateZ - 0) * ease;
 
-            transformStr = `translate3d(${currentX}px, ${currentY}px, 0) scale(${currentScale}) rotateZ(${currentRotate}deg)`;
+            transformStr = `translate3d(${currentX}px, ${currentY}px, ${currentZ}px) rotateY(${currentRotate}deg) scale(${currentScale})`;
             zIndexVal = 2000; 
             opacityVal = 1;
           } else if (isCarouselPaused) {
@@ -524,7 +537,8 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             <div
               key={post.id}
               onClick={() => {
-                if (cosVal > 0 || isNewUpload) handleCardClick(i);
+                // 중앙 근처에 있는 카드들만 클릭 가능하도록 제한
+                if (Math.abs(progress) <= 1.5 || isNewUpload) handleCardClick(i);
               }}
               className="absolute w-[220px] h-[290px] origin-center pointer-events-auto cursor-pointer"
               style={{
@@ -533,9 +547,11 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 zIndex: zIndexVal,
                 opacity: opacityVal,
                 willChange: "transform, opacity",
+                // 💡 바닥 반사(Reflection) 효과 추가
+                WebkitBoxReflect: "below 4px linear-gradient(to bottom, rgba(0,0,0,0) 70%, rgba(0,0,0,0.3))"
               }}
             >
-              <div className="relative w-full h-full bg-white rounded-xl overflow-hidden shadow-[0_12px_32px_rgba(0,0,0,0.08)] border border-zinc-200/40">
+              <div className="relative w-full h-full bg-white rounded-none overflow-hidden shadow-[0_12px_32px_rgba(0,0,0,0.12)] border border-zinc-200/40">
                 <Image 
                   src={post.imageData} 
                   alt="Style Space Element" 
