@@ -87,7 +87,11 @@ export default function Home() {
       
       setIsTransitioning(true)
       setPosts(prevPosts => {
-        const updatedPosts = [newPost, ...prevPosts]
+        // 💡 수정된 부분: 무조건 맨 앞(0번)이 아닌, 기존 배열 사이의 랜덤한 위치(인덱스)에 새 사진을 삽입합니다.
+        const insertIndex = prevPosts.length > 0 ? Math.floor(Math.random() * (prevPosts.length + 1)) : 0
+        const updatedPosts = [...prevPosts]
+        updatedPosts.splice(insertIndex, 0, newPost)
+
         localStorage.setItem("zzuggumi_posts", JSON.stringify(updatedPosts))
         return updatedPosts
       })
@@ -105,7 +109,6 @@ export default function Home() {
 
   return (
     <>
-      {/* 💡 배경색을 bg-[#f3f3f1] 에서 bg-white 로 변경했습니다. */}
       <main 
         className={`relative min-h-screen w-full max-w-md mx-auto bg-white overflow-hidden transition-opacity duration-300 ${
           currentScreen !== "home" ? "opacity-0" : "opacity-100"
