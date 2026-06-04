@@ -110,8 +110,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
       setAutoAngle(angleRef.current)
       setTick(now) 
 
-      // 💡 [실시간 중앙 인덱스 추적]
-      // 돌고 있는 띠 중에 현재 어떤 인덱스가 가장 '화면 중앙(0도)'에 가까운지 지속적으로 계산해 둡니다.
       const totalCards = userPostsRef.current.length
       if (totalCards > 0) {
         const CARD_WIDTH = 220
@@ -135,7 +133,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 bestIndex = i
             }
         }
-        // 계산된 최적의 중앙 인덱스를 window 객체에 저장하여 page.tsx가 업로드 시점에 읽어갈 수 있게 합니다.
         if (typeof window !== 'undefined') {
             (window as any).zzuggumiInsertIndex = bestIndex
         }
@@ -261,6 +258,9 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     )
   }
 
+  // -------------------------------------------------------------
+  // 📱 [1] 스와이프 피드백 모드 레이아웃
+  // -------------------------------------------------------------
   if (selectedPost) {
     const activePost = currentQueueIndex < feedbackQueue.length ? feedbackQueue[currentQueueIndex] : feedbackQueue[feedbackQueue.length - 1]
     const nextPost = currentQueueIndex + 1 < feedbackQueue.length ? feedbackQueue[currentQueueIndex + 1] : null
@@ -293,7 +293,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           }`}
         >
           <div 
-            className="bg-[#FCDFD3] border border-[#F5C2AF] rounded-[24px] p-5 flex flex-col gap-2"
+            className="bg-[#FCDFD3] border border-[#F5C2AF] rounded-[24px] p-5 flex flex-col gap-2 shadow-none"
             style={{ width: imageWidth ? `${imageWidth}px` : '100%', maxWidth: '100%' }}
           >
             <div className="flex items-center gap-1.5">
@@ -343,7 +343,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           >
             {nextPost && !showExitModal && (
               <div 
-                className="absolute inset-0 w-full h-full rounded-none overflow-hidden bg-white border border-zinc-200/40 pointer-events-none origin-center"
+                className="absolute inset-0 w-full h-full rounded-none overflow-hidden bg-white border border-zinc-200/40 pointer-events-none origin-center shadow-none"
                 style={{
                   transform: `scale(${nextCardScale}) translateY(${(1 - nextCardScale) * 120}px)`,
                   opacity: nextCardOpacity,
@@ -356,7 +356,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             )}
 
             <div
-              className="absolute inset-0 w-full h-full rounded-none bg-white border border-zinc-200/40 overflow-hidden"
+              className="absolute inset-0 w-full h-full rounded-none bg-white border border-zinc-200/40 overflow-hidden shadow-none"
               style={{
                 transform: `translate3d(0, ${swipeOffset}px, 0)`,
                 transition: (isDragging || isResetting) ? "none" : "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
@@ -405,7 +405,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                           e.stopPropagation()
                           handleVote(activePost.id, idx)
                         }}
-                        className="relative w-full bg-black/50 backdrop-blur-md border border-white/20 rounded-2xl overflow-hidden p-3 text-left transition-transform active:scale-95"
+                        className="relative w-full bg-black/50 backdrop-blur-md border border-white/20 rounded-2xl overflow-hidden p-3 text-left transition-transform active:scale-95 shadow-none"
                       >
                         <div
                           className="absolute top-0 left-0 bottom-0 bg-[#FF6200]/90 z-0 transition-all duration-500 ease-out"
@@ -425,7 +425,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
           {showTutorial && !showExitModal && (
             <div className="absolute inset-0 bg-[#d6d6d6]/80 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center p-6 select-none">
-              <div className="w-full max-w-[320px] bg-[#f7f7f7] rounded-[24px] py-12 px-6 flex flex-col items-center shadow-lg">
+              <div className="w-full max-w-[320px] bg-[#f7f7f7] rounded-[24px] py-12 px-6 flex flex-col items-center shadow-none">
                 <div className="w-12 h-12 mb-8">
                   <svg viewBox="0 0 24 24" className="w-full h-full fill-none stroke-[#EA5C1F]" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
@@ -453,7 +453,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
           {showExitModal && (
             <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] z-50 flex items-center justify-center p-6 select-none">
-              <div className="w-full max-w-[320px] bg-white rounded-[24px] px-6 py-10 flex flex-col items-center shadow-2xl">
+              <div className="w-full max-w-[320px] bg-white rounded-[24px] px-6 py-10 flex flex-col items-center shadow-none">
                 <h3 className="text-2xl font-black text-[#111111] text-center">쭈템프 {stampsEarned}개 획득</h3>
                 <p className="text-sm font-medium text-zinc-400 mt-3 mb-10 text-center">
                   총 {completedCount}명의 쭈꾸미에게 피드백을 전달했어요
@@ -485,10 +485,9 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   }
 
   // -------------------------------------------------------------
-  // 🌌 [2] 모세의 기적(공간 열어 파고들기) 애니메이션 레이아웃
+  // 🌌 [2] 홈화면 3D 원통형(Carousel) 레이아웃
   // -------------------------------------------------------------
   
-  // 전체 요소 중 하나라도 업로드된 지 3초가 안 지났다면 멈춤 상태 (기존 사진들은 모세의 기적 진행 중)
   const isCarouselPaused = userPosts.length > 0 && userPosts.some(p => (tick - p.createdAt) < 3000)
 
   return (
@@ -503,16 +502,13 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           transformStyle: "preserve-3d"
         }}
       >
-        {/* 💡 띠 전체를 아우르는 바닥 원형띠 그림자 (카드 개별 그림자를 대체) */}
         {userPosts.length > 0 && (
           <div 
             className="absolute top-1/2 left-1/2 pointer-events-none"
             style={{
               width: "2400px",
               height: "2400px",
-              // 카드의 높이(290px)를 고려하여 바닥(Y=145px) 위치에 깔리도록 설정
               transform: "translate(-50%, -50%) translateY(145px) rotateX(90deg)",
-              // 카드의 궤도(반지름 800px)에 맞춰 66% 지점에 원형 띠 형태의 그림자 생성
               background: "radial-gradient(closest-side, transparent 55%, rgba(0,0,0,0.05) 66%, transparent 80%)",
               zIndex: 0
             }}
@@ -543,7 +539,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
           const age = tick - post.createdAt
           
-          // 새롭게 업로드된 사진 식별
           const isNewUpload = age < 3000
 
           let transformStr = `translateZ(-${radius}px) rotateY(${currentAngle}deg) translateZ(${radius}px)`
@@ -554,7 +549,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
           let transitionStr = "none"
 
-          // 💡 모세의 기적: 새 사진이 들어갈 자리를 마련하기 위해 기존 사진들이 부드럽게 옆으로 밀려나는 트랜지션
           if (isCarouselPaused && !isNewUpload) {
             transitionStr = "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s ease"
           }
@@ -563,7 +557,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             transitionStr = "none"
 
             if (age < 1500) {
-              // ⭐️ Phase 1 (0~1.5초): 화면 정중앙에 크게 팝업되어 대기합니다. (그 사이 띠는 1.2초 동안 모세의 기적으로 빈 공간을 오픈합니다)
               const introProgress = Math.min(1, age / 400) 
               const ease = 1 - Math.pow(1 - introProgress, 3)
               const currentScale = 0.8 + (1.1 - 0.8) * ease
@@ -572,7 +565,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
               zIndexVal = 2000 
               opacityVal = introProgress
             } else {
-              // ⭐️ Phase 2 (1.5초~3초): 화면 중앙에 열려있는 빈 공간으로 스르륵 밀려 들어가며 파고듭니다.
               const progress = Math.min(1, (age - 1500) / 1200) 
               const ease = 1 - Math.pow(1 - progress, 3)
               
@@ -584,7 +576,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
               
               const currentScale = 1.1 + (1 - 1.1) * ease
 
-              // 가장 짧은 궤적으로 회전하여 띠의 빈 슬롯에 완벽하게 안착합니다.
               let targetRot = currentAngle % 360
               if (targetRot > 180) targetRot -= 360
               if (targetRot < -180) targetRot += 360
@@ -617,8 +608,8 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 WebkitBoxReflect: "below 4px linear-gradient(to bottom, transparent 65%, rgba(0,0,0,0.5))"
               }}
             >
-              {/* 💡 개별 카드의 그림자 속성(shadow-[...])을 제거했습니다. */}
-              <div className="relative w-full h-full bg-white rounded-none overflow-hidden border border-zinc-200/40">
+              {/* 💡 개별 카드의 그림자(shadow)를 강제로 완벽하게 없애기 위해 shadow-none 속성을 명시적으로 추가했습니다. */}
+              <div className="relative w-full h-full bg-white rounded-none overflow-hidden border border-zinc-200/40 shadow-none">
                 <Image 
                   src={post.imageData} 
                   alt="Style Space Element" 
