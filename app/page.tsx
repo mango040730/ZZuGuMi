@@ -87,9 +87,13 @@ export default function Home() {
       
       setIsTransitioning(true)
       setPosts(prevPosts => {
-        // 💡 수정된 부분: 무조건 맨 앞(0번)이 아닌, 기존 배열 사이의 랜덤한 위치(인덱스)에 새 사진을 삽입합니다.
-        const insertIndex = prevPosts.length > 0 ? Math.floor(Math.random() * (prevPosts.length + 1)) : 0
+        // 💡 핵심: floating-cards에서 실시간으로 계산해둔 '화면 정중앙' 인덱스를 가져옵니다.
+        let insertIndex = typeof window !== 'undefined' ? (window as any).zzuggumiInsertIndex : 0;
+        if (insertIndex === undefined || insertIndex < 0) insertIndex = 0;
+        if (insertIndex > prevPosts.length) insertIndex = prevPosts.length;
+
         const updatedPosts = [...prevPosts]
+        // 정중앙 위치에 새 사진을 정확히 삽입
         updatedPosts.splice(insertIndex, 0, newPost)
 
         localStorage.setItem("zzuggumi_posts", JSON.stringify(updatedPosts))
