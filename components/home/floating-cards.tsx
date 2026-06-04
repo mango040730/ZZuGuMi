@@ -102,6 +102,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
         ? Math.min(...userPostsRef.current.map(p => now - p.createdAt))
         : 9999
       
+      // 업로드 후 3초 동안은 회전을 정지시켜 모세의 기적(공간 열리기) 모션을 보여줍니다.
       if (newestPostAge >= 3000) {
         angleRef.current -= 0.08 
       }
@@ -481,7 +482,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   }
 
   // -------------------------------------------------------------
-  // 🌌 [2] 홈화면 3D 원통형(Carousel) 레이아웃
+  // 🌌 [2] 홈화면 3D 원통형(Carousel) 레이아웃 - 반사 효과 완전 제거됨
   // -------------------------------------------------------------
   
   const isCarouselPaused = userPosts.length > 0 && userPosts.some(p => (tick - p.createdAt) < 3000)
@@ -492,21 +493,21 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
       className="relative w-full h-full overflow-hidden bg-white touch-none"
     >
       <div 
-        className="absolute inset-y-0 left-0 w-full h-[calc(100vh-80px)] pointer-events-none flex items-center justify-center -translate-y-[10vh]"
+        className="absolute inset-y-0 left-0 w-full h-[calc(100vh-80px)] pointer-events-none flex items-center justify-center"
         style={{ 
           perspective: "1200px",
           transformStyle: "preserve-3d"
         }}
       >
-        {/* 💡 억지스러운 3D rotateX를 없애고, 타원형(ellipse) 2D 그라데이션으로 자연스러운 바닥 띠 그림자를 구현했습니다. */}
+        {/* 💡 바닥의 거대한 원형띠 그림자는 유지 */}
         {userPosts.length > 0 && (
           <div 
             className="absolute top-1/2 left-1/2 pointer-events-none"
             style={{
-              width: "1600px",
-              height: "220px", // 세로 길이를 줄여 납작한 타원형 생성
-              transform: "translate(-50%, -50%) translateY(160px)", // rotateX 제거
-              background: "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.06) 60%, transparent 80%)",
+              width: "2400px",
+              height: "2400px",
+              transform: "translate(-50%, -50%) translateY(145px) rotateX(90deg)",
+              background: "radial-gradient(closest-side, transparent 55%, rgba(0,0,0,0.05) 66%, transparent 80%)",
               zIndex: 0
             }}
           />
@@ -601,7 +602,8 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 transition: transitionStr,
                 zIndex: zIndexVal,
                 opacity: opacityVal,
-                willChange: "transform, opacity"
+                willChange: "transform, opacity",
+                // 💡 WebkitBoxReflect 속성을 완전히 삭제하여 바닥 거울 반사 효과를 제거했습니다!
               }}
             >
               <div className="relative w-full h-full bg-white rounded-none overflow-hidden border border-zinc-200/40 shadow-none">
