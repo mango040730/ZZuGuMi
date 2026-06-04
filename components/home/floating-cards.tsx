@@ -293,7 +293,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           }`}
         >
           <div 
-            className="bg-[#FCDFD3] border border-[#F5C2AF] rounded-[24px] p-5 shadow-[0_12px_24px_rgba(234,92,31,0.12)] flex flex-col gap-2"
+            className="bg-[#FCDFD3] border border-[#F5C2AF] rounded-[24px] p-5 flex flex-col gap-2"
             style={{ width: imageWidth ? `${imageWidth}px` : '100%', maxWidth: '100%' }}
           >
             <div className="flex items-center gap-1.5">
@@ -343,7 +343,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           >
             {nextPost && !showExitModal && (
               <div 
-                className="absolute inset-0 w-full h-full rounded-none overflow-hidden bg-white shadow-[0_8px_24px_rgba(0,0,0,0.04)] border border-zinc-200/40 pointer-events-none origin-center"
+                className="absolute inset-0 w-full h-full rounded-none overflow-hidden bg-white border border-zinc-200/40 pointer-events-none origin-center"
                 style={{
                   transform: `scale(${nextCardScale}) translateY(${(1 - nextCardScale) * 120}px)`,
                   opacity: nextCardOpacity,
@@ -356,7 +356,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             )}
 
             <div
-              className="absolute inset-0 w-full h-full rounded-none bg-white shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-zinc-200/40 overflow-hidden"
+              className="absolute inset-0 w-full h-full rounded-none bg-white border border-zinc-200/40 overflow-hidden"
               style={{
                 transform: `translate3d(0, ${swipeOffset}px, 0)`,
                 transition: (isDragging || isResetting) ? "none" : "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
@@ -371,7 +371,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                   className="absolute inset-0 pointer-events-none flex items-center justify-center bg-gradient-to-b from-[#FF6200]/90 via-[#FF6200]/50 to-transparent transition-opacity z-20"
                   style={{ opacity: Math.min(1, Math.abs(swipeOffset) / 100) }}
                 >
-                  <div className="w-[80px] h-[80px] rounded-full border-[4px] border-white flex items-center justify-center shadow-lg bg-transparent">
+                  <div className="w-[80px] h-[80px] rounded-full border-[4px] border-white flex items-center justify-center bg-transparent">
                     <ThumbsUp className="w-10 h-10 text-white" strokeWidth={2.5} />
                   </div>
                 </div>
@@ -382,7 +382,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                   className="absolute inset-0 pointer-events-none flex items-end justify-center pb-24 bg-gradient-to-t from-black/90 via-black/50 to-transparent transition-opacity z-20"
                   style={{ opacity: Math.min(1, swipeOffset / 100) }}
                 >
-                  <div className="w-[80px] h-[80px] rounded-full border-[4px] border-white flex items-center justify-center shadow-lg bg-transparent">
+                  <div className="w-[80px] h-[80px] rounded-full border-[4px] border-white flex items-center justify-center bg-transparent">
                     <ThumbsDown className="w-10 h-10 text-white" strokeWidth={2.5} />
                   </div>
                 </div>
@@ -405,7 +405,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                           e.stopPropagation()
                           handleVote(activePost.id, idx)
                         }}
-                        className="relative w-full bg-black/50 backdrop-blur-md border border-white/20 rounded-2xl overflow-hidden p-3 text-left transition-transform active:scale-95 shadow-lg"
+                        className="relative w-full bg-black/50 backdrop-blur-md border border-white/20 rounded-2xl overflow-hidden p-3 text-left transition-transform active:scale-95"
                       >
                         <div
                           className="absolute top-0 left-0 bottom-0 bg-[#FF6200]/90 z-0 transition-all duration-500 ease-out"
@@ -503,6 +503,22 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           transformStyle: "preserve-3d"
         }}
       >
+        {/* 💡 띠 전체를 아우르는 바닥 원형띠 그림자 (카드 개별 그림자를 대체) */}
+        {userPosts.length > 0 && (
+          <div 
+            className="absolute top-1/2 left-1/2 pointer-events-none"
+            style={{
+              width: "2400px",
+              height: "2400px",
+              // 카드의 높이(290px)를 고려하여 바닥(Y=145px) 위치에 깔리도록 설정
+              transform: "translate(-50%, -50%) translateY(145px) rotateX(90deg)",
+              // 카드의 궤도(반지름 800px)에 맞춰 66% 지점에 원형 띠 형태의 그림자 생성
+              background: "radial-gradient(closest-side, transparent 55%, rgba(0,0,0,0.05) 66%, transparent 80%)",
+              zIndex: 0
+            }}
+          />
+        )}
+
         {userPosts.map((post, i) => {
           const totalCards = userPosts.length
           
@@ -601,7 +617,8 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 WebkitBoxReflect: "below 4px linear-gradient(to bottom, transparent 65%, rgba(0,0,0,0.5))"
               }}
             >
-              <div className="relative w-full h-full bg-white rounded-none overflow-hidden shadow-[0_12px_32px_rgba(0,0,0,0.12)] border border-zinc-200/40">
+              {/* 💡 개별 카드의 그림자 속성(shadow-[...])을 제거했습니다. */}
+              <div className="relative w-full h-full bg-white rounded-none overflow-hidden border border-zinc-200/40">
                 <Image 
                   src={post.imageData} 
                   alt="Style Space Element" 
