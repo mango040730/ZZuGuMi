@@ -102,7 +102,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
         ? Math.min(...userPostsRef.current.map(p => now - p.createdAt))
         : 9999
       
-      // 업로드 후 3초 동안은 회전을 정지시켜 모세의 기적(공간 열리기) 모션을 보여줍니다.
       if (newestPostAge >= 3000) {
         angleRef.current -= 0.08 
       }
@@ -419,59 +418,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
               )}
             </div>
           </div>
-
-          {showTutorial && !showExitModal && (
-            <div className="absolute inset-0 bg-[#d6d6d6]/80 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center p-6 select-none">
-              <div className="w-full max-w-[320px] bg-[#f7f7f7] rounded-[24px] py-12 px-6 flex flex-col items-center shadow-none">
-                <div className="w-12 h-12 mb-8">
-                  <svg viewBox="0 0 24 24" className="w-full h-full fill-none stroke-[#EA5C1F]" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
-                  </svg>
-                </div>
-                <div className="text-center text-[#EA5C1F] text-[18px] font-bold leading-relaxed mb-8 tracking-tight">
-                  <p>쭈업은 위, 쭈따는 아래</p>
-                  <p>상하로 화면을 밀어주세요</p>
-                </div>
-                <div className="w-12 h-12">
-                  <svg viewBox="0 0 24 24" className="w-full h-full fill-none stroke-[#EA5C1F]" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path>
-                  </svg>
-                </div>
-              </div>
-              <button 
-                onClick={handleConfirmTutorial}
-                className="mt-10 w-12 h-12 rounded-full border-[3px] border-white bg-transparent flex items-center justify-center transition-transform active:scale-95"
-                aria-label="닫기"
-              >
-                <X className="w-7 h-7 text-white" strokeWidth={3} />
-              </button>
-            </div>
-          )}
-
-          {showExitModal && (
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] z-50 flex items-center justify-center p-6 select-none">
-              <div className="w-full max-w-[320px] bg-white rounded-[24px] px-6 py-10 flex flex-col items-center shadow-none">
-                <h3 className="text-2xl font-black text-[#111111] text-center">쭈템프 {stampsEarned}개 획득</h3>
-                <p className="text-sm font-medium text-zinc-400 mt-3 mb-10 text-center">
-                  총 {completedCount}명의 쭈꾸미에게 피드백을 전달했어요
-                </p>
-                <div className="flex flex-col gap-3 w-full">
-                  <button 
-                    onClick={handleContinueFeedback} 
-                    className="w-full py-4 bg-[#FF6200] text-white rounded-full font-bold text-sm text-center transition-transform active:scale-95"
-                  >
-                    계속 진행 하기
-                  </button>
-                  <button 
-                    onClick={handleExitFeedback} 
-                    className="w-full py-4 bg-[#FFFFFF] border-[2px] border-[#9D9D9D] text-[#111111] rounded-full font-bold text-sm text-center transition-transform active:scale-95"
-                  >
-                    나가기
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="h-8 w-full flex justify-center items-center select-none pb-2">
@@ -482,7 +428,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   }
 
   // -------------------------------------------------------------
-  // 🌌 [2] 홈화면 3D 원통형(Carousel) 레이아웃 - 반사 효과 완전 제거됨
+  // 🌌 [2] 홈화면 3D 원통형(Carousel) 레이아웃
   // -------------------------------------------------------------
   
   const isCarouselPaused = userPosts.length > 0 && userPosts.some(p => (tick - p.createdAt) < 3000)
@@ -493,21 +439,21 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
       className="relative w-full h-full overflow-hidden bg-white touch-none"
     >
       <div 
-        className="absolute inset-y-0 left-0 w-full h-[calc(100vh-80px)] pointer-events-none flex items-center justify-center"
+        className="absolute inset-y-0 left-0 w-full h-[calc(100vh-80px)] pointer-events-none flex items-center justify-center -translate-y-[10vh]"
         style={{ 
           perspective: "1200px",
           transformStyle: "preserve-3d"
         }}
       >
-        {/* 💡 바닥의 거대한 원형띠 그림자는 유지 */}
+        {/* 💡 [수정] 원형띠 그림자를 더 아래로(220px) 배치하여 부유감 극대화 */}
         {userPosts.length > 0 && (
           <div 
             className="absolute top-1/2 left-1/2 pointer-events-none"
             style={{
               width: "2400px",
               height: "2400px",
-              transform: "translate(-50%, -50%) translateY(145px) rotateX(90deg)",
-              background: "radial-gradient(closest-side, transparent 55%, rgba(0,0,0,0.05) 66%, transparent 80%)",
+              transform: "translate(-50%, -50%) translateY(220px) rotateX(90deg)",
+              background: "radial-gradient(closest-side, transparent 55%, rgba(0,0,0,0.08) 66%, transparent 80%)",
               zIndex: 0
             }}
           />
@@ -602,8 +548,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 transition: transitionStr,
                 zIndex: zIndexVal,
                 opacity: opacityVal,
-                willChange: "transform, opacity",
-                // 💡 WebkitBoxReflect 속성을 완전히 삭제하여 바닥 거울 반사 효과를 제거했습니다!
+                willChange: "transform, opacity"
               }}
             >
               <div className="relative w-full h-full bg-white rounded-none overflow-hidden border border-zinc-200/40 shadow-none">
