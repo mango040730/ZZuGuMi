@@ -28,48 +28,8 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   
   const [tick, setTick] = useState(0)
   const userPostsRef = useRef(userPosts)
-  const prevPostsLength = useRef(userPosts.length)
-
-  // 💡 업로드 시 '중앙 빈 공간 만들기' 애니메이션을 관리하는 Ref
-  const uploadAnimRef = useRef({ 
-    isAnimating: false, 
-    startTime: 0, 
-    startAutoAngle: 0, 
-    targetAutoAngle: 0 
-  })
 
   useEffect(() => {
-    // 새 사진이 배열에 추가되었을 때
-    if (userPosts.length > prevPostsLength.current && prevPostsLength.current > 0) {
-      const totalCards = userPosts.length
-      const CARD_WIDTH = 220
-      const GAP = 124
-      const HALF_CHORD = (CARD_WIDTH + GAP) / 2
-      let radius = 800
-      if (totalCards > 14) {
-        radius = HALF_CHORD / Math.sin(Math.PI / totalCards)
-      }
-      const anglePerCard = 2 * Math.asin(HALF_CHORD / radius) * (180 / Math.PI)
-      
-      // 1. 기존 사진들이 1픽셀도 튀지 않도록, 들어온 1장만큼 축을 뒤로 밀어줍니다.
-      const startAutoAngle = angleRef.current - anglePerCard
-      
-      // 2. 새 사진이 '화면 정중앙(0도)'에 안착하도록 목표 궤도(360도의 배수)를 계산합니다.
-      const targetAutoAngle = Math.round(startAutoAngle / 360) * 360
-      
-      // 3. 3초 동안 부드럽게 중앙을 열어주는 애니메이션 시작
-      uploadAnimRef.current = {
-        isAnimating: true,
-        startTime: Date.now(),
-        startAutoAngle: startAutoAngle,
-        targetAutoAngle: targetAutoAngle
-      }
-      
-      angleRef.current = startAutoAngle
-      setAutoAngle(startAutoAngle)
-    }
-    
-    prevPostsLength.current = userPosts.length
     userPostsRef.current = userPosts
   }, [userPosts])
 
@@ -132,27 +92,19 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     return () => observer.disconnect()
   }, [selectedPost])
 
-  // 🔄 띠 회전 & 업로드 정지/스며들기 로직
+  // 🔄 띠 회전 & 업로드 정지 로직
   useEffect(() => {
     let animationFrameId: number
 
     const rotate = () => {
       const now = Date.now()
+      // 💡 새 사진이 0번 인덱스라는 보장이 없으므로, 배열 안의 모든 사진 중 '가장 최근에 올라온 사진의 나이'를 계산합니다.
+      const newestPostAge = userPostsRef.current.length > 0 
+        ? Math.min(...userPostsRef.current.map(p => now - p.createdAt))
+        : 9999
       
-      if (uploadAnimRef.current.isAnimating) {
-        const elapsed = now - uploadAnimRef.current.startTime
-        if (elapsed < 3000) {
-          // 💡 새 사진 업로드 시, 기존 사진들이 3초 동안 스르륵 옆으로 비키며 중앙 공간을 열어줍니다.
-          const progress = elapsed / 3000
-          const ease = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2
-          
-          angleRef.current = uploadAnimRef.current.startAutoAngle + (uploadAnimRef.current.targetAutoAngle - uploadAnimRef.current.startAutoAngle) * ease
-        } else {
-          uploadAnimRef.current.isAnimating = false
-          angleRef.current = uploadAnimRef.current.targetAutoAngle
-        }
-      } else {
-        // 평소의 자연스러운 빙글빙글 회전
+      // 💡 업로드 후 3초 동안은 회전을 정지시켜 스며드는 모션을 안정적으로 보여줍니다.
+      if (newestPostAge >= 3000) {
         angleRef.current -= 0.08 
       }
       
@@ -278,9 +230,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     )
   }
 
-  // -------------------------------------------------------------
-  // 📱 [1] 스와이프 피드백 모드 레이아웃 (이전과 동일)
-  // -------------------------------------------------------------
   if (selectedPost) {
     const activePost = currentQueueIndex < feedbackQueue.length ? feedbackQueue[currentQueueIndex] : feedbackQueue[feedbackQueue.length - 1]
     const nextPost = currentQueueIndex + 1 < feedbackQueue.length ? feedbackQueue[currentQueueIndex + 1] : null
@@ -505,9 +454,12 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   }
 
   // -------------------------------------------------------------
-  // 🌌 [2] 3D 원통형(Carousel) - 완벽하게 띠 중간으로 파고드는 애니메이션 적용
+  // 🌌 [2] 랜덤 타겟 궤도 스며들기 애니메이션
   // -------------------------------------------------------------
   
+  // 전체 요소 중 하나라도 업로드된 지 3초가 안 지났다면 멈춤 상태
+  const isCarouselPaused = userPosts.length > 0 && userPosts.some(p => (tick - p.createdAt) < 3000)
+
   return (
     <div 
       ref={containerRef}
@@ -535,6 +487,8 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           }
 
           const anglePerCard = 2 * Math.asin(HALF_CHORD / radius) * (180 / Math.PI)
+          
+          // 랜덤으로 삽입된 인덱스 'i'에 의해 고유한 타겟 궤도 각도가 정해집니다.
           const cardBaseAngle = anglePerCard * i
           const currentAngle = cardBaseAngle + autoAngle
           
@@ -543,8 +497,8 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
           const age = tick - post.createdAt
           
-          // 💡 새 사진 업로드 시 3초간의 애니메이션 로직
-          const isNewUpload = i === 0 && age < 3000
+          // 💡 새 사진 업로드 시 3초간의 애니메이션 로직 (인덱스 제한 없음)
+          const isNewUpload = age < 3000
 
           let transformStr = `translateZ(-${radius}px) rotateY(${currentAngle}deg) translateZ(${radius}px)`
           let zIndexVal = Math.round(cosVal * 100)
@@ -552,13 +506,19 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           let opacityVal = cosVal > 0.6 ? 1 : 0.2 + ((cosVal + 1) / 1.6) * 0.8
           opacityVal = Math.max(0.2, Math.min(1, opacityVal))
 
-          // JS의 requestAnimationFrame으로 모든 프레임을 제어하므로 CSS Transition은 해제합니다.
           let transitionStr = "none"
 
+          // 새로운 사진이 파고들 자리를 기존 사진들이 부드럽게 열어줍니다.
+          if (isCarouselPaused && !isNewUpload) {
+            transitionStr = "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s ease"
+          }
+
           if (isNewUpload) {
+            transitionStr = "none"
+
             if (age < 1500) {
-              // ⭐️ Phase 1 (0~1.5초): 화면 한가운데서 큰 크기로 대기합니다. (그 사이 띠는 빈 공간을 정중앙으로 맞춥니다)
-              const introProgress = Math.min(1, age / 400) // 0.4초 만에 팝업
+              // ⭐️ Phase 1 (0~1.5초): 랜덤한 각도를 무시하고 무조건 화면 중앙에 팝업되어 대기합니다.
+              const introProgress = Math.min(1, age / 400) 
               const ease = 1 - Math.pow(1 - introProgress, 3)
               const currentScale = 0.8 + (1.1 - 0.8) * ease
               
@@ -566,8 +526,8 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
               zIndexVal = 2000 
               opacityVal = introProgress
             } else {
-              // ⭐️ Phase 2 (1.5초~3초): 정중앙에 열린 빈 공간을 향해 뒤로 스며들어 파고듭니다.
-              const progress = Math.min(1, (age - 1500) / 1200) // 1.2초 동안 스며듦
+              // ⭐️ Phase 2 (1.5초~3초): 랜덤하게 지정된 자신의 진짜 위치(currentAngle)를 찾아 뒤로 스며듭니다.
+              const progress = Math.min(1, (age - 1500) / 1200) 
               const ease = 1 - Math.pow(1 - progress, 3)
               
               const targetRadiusNeg = -radius
@@ -578,7 +538,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
               
               const currentScale = 1.1 + (1 - 1.1) * ease
 
-              // 가장 짧은 궤적으로 회전하여 띠의 빈 슬롯에 안착합니다.
               let targetRot = currentAngle % 360
               if (targetRot > 180) targetRot -= 360
               if (targetRot < -180) targetRot += 360
