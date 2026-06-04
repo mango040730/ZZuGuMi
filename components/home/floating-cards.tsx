@@ -482,7 +482,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   }
 
   // -------------------------------------------------------------
-  // 🌌 [2] 홈화면 3D 원통형(Carousel) 레이아웃 - 반사 효과 완전 제거됨
+  // 🌌 [2] 홈화면 3D 원통형(Carousel) 레이아웃
   // -------------------------------------------------------------
   
   const isCarouselPaused = userPosts.length > 0 && userPosts.some(p => (tick - p.createdAt) < 3000)
@@ -493,13 +493,14 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
       className="relative w-full h-full overflow-hidden bg-white touch-none"
     >
       <div 
-        className="absolute inset-y-0 left-0 w-full h-[calc(100vh-80px)] pointer-events-none flex items-center justify-center"
+        // 💡 3D 컨테이너 전체를 상단바(헤더) 쪽으로 올리기 위해 -translate-y-[10vh] 속성 추가
+        className="absolute inset-y-0 left-0 w-full h-[calc(100vh-80px)] pointer-events-none flex items-center justify-center -translate-y-[10vh]"
         style={{ 
           perspective: "1200px",
           transformStyle: "preserve-3d"
         }}
       >
-        {/* 💡 바닥의 거대한 원형띠 그림자는 유지 */}
+        {/* 💡 띠 전체를 아우르는 바닥 원형띠 그림자 (농도를 0.08로 높여 입체감 강조) */}
         {userPosts.length > 0 && (
           <div 
             className="absolute top-1/2 left-1/2 pointer-events-none"
@@ -507,7 +508,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
               width: "2400px",
               height: "2400px",
               transform: "translate(-50%, -50%) translateY(145px) rotateX(90deg)",
-              background: "radial-gradient(closest-side, transparent 55%, rgba(0,0,0,0.05) 66%, transparent 80%)",
+              background: "radial-gradient(closest-side, transparent 55%, rgba(0,0,0,0.08) 66%, transparent 80%)",
               zIndex: 0
             }}
           />
@@ -602,8 +603,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 transition: transitionStr,
                 zIndex: zIndexVal,
                 opacity: opacityVal,
-                willChange: "transform, opacity",
-                // 💡 WebkitBoxReflect 속성을 완전히 삭제하여 바닥 거울 반사 효과를 제거했습니다!
+                willChange: "transform, opacity"
               }}
             >
               <div className="relative w-full h-full bg-white rounded-none overflow-hidden border border-zinc-200/40 shadow-none">
