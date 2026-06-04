@@ -441,13 +441,14 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           transformStyle: "preserve-3d"
         }}
       >
+        {/* 💡 [수정] 바닥 그림자: 카메라 버튼에서 80px 위에 위치하도록 translateY(300px) 설정 */}
         {userPosts.length > 0 && (
           <div 
             className="absolute top-1/2 left-1/2 pointer-events-none"
             style={{
               width: "2400px",
               height: "2400px",
-              transform: "translate(-50%, -50%) translateY(350px)",
+              transform: "translate(-50%, -50%) translateY(300px) rotateX(90deg)",
               background: "radial-gradient(closest-side, transparent 55%, rgba(0,0,0,0.08) 66%, transparent 80%)",
               zIndex: 0
             }}
