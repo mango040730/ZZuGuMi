@@ -257,6 +257,9 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     )
   }
 
+  // -------------------------------------------------------------
+  // 📱 [1] 스와이프 피드백 모드 레이아웃
+  // -------------------------------------------------------------
   if (selectedPost) {
     const activePost = currentQueueIndex < feedbackQueue.length ? feedbackQueue[currentQueueIndex] : feedbackQueue[feedbackQueue.length - 1]
     const nextPost = currentQueueIndex + 1 < feedbackQueue.length ? feedbackQueue[currentQueueIndex + 1] : null
@@ -362,6 +365,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             >
               <Image src={activePost.imageData} alt="Current Style" fill className="object-cover pointer-events-none" unoptimized />
 
+              {/* ⬆️ 위로 스와이프: 주황색 그라데이션 & ThumbsUp 아이콘 */}
               {swipeOffset < -20 && (
                 <div 
                   className="absolute inset-0 pointer-events-none flex items-center justify-center bg-gradient-to-b from-[#FF6200]/90 via-[#FF6200]/50 to-transparent transition-opacity z-20"
@@ -373,6 +377,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 </div>
               )}
 
+              {/* ⬇️ 아래로 스와이프: 검정색 그라데이션 & ThumbsDown 아이콘 */}
               {swipeOffset > 20 && (
                 <div 
                   className="absolute inset-0 pointer-events-none flex items-end justify-center pb-24 bg-gradient-to-t from-black/90 via-black/50 to-transparent transition-opacity z-20"
@@ -418,6 +423,62 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
               )}
             </div>
           </div>
+
+          {/* 복원된 튜토리얼 모달 */}
+          {showTutorial && !showExitModal && (
+            <div className="absolute inset-0 bg-[#d6d6d6]/80 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center p-6 select-none">
+              <div className="w-full max-w-[320px] bg-[#f7f7f7] rounded-[24px] py-12 px-6 flex flex-col items-center shadow-lg">
+                <div className="w-12 h-12 mb-8">
+                  <svg viewBox="0 0 24 24" className="w-full h-full fill-none stroke-[#EA5C1F]" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                  </svg>
+                </div>
+                <div className="text-center text-[#EA5C1F] text-[18px] font-bold leading-relaxed mb-8 tracking-tight">
+                  <p>쭈업은 위, 쭈따는 아래</p>
+                  <p>상하로 화면을 밀어주세요</p>
+                </div>
+                <div className="w-12 h-12">
+                  <svg viewBox="0 0 24 24" className="w-full h-full fill-none stroke-[#EA5C1F]" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path>
+                  </svg>
+                </div>
+              </div>
+              <button 
+                onClick={handleConfirmTutorial}
+                className="mt-10 w-12 h-12 rounded-full border-[3px] border-white bg-transparent flex items-center justify-center transition-transform active:scale-95"
+                aria-label="닫기"
+              >
+                <X className="w-7 h-7 text-white" strokeWidth={3} />
+              </button>
+            </div>
+          )}
+
+          {/* 복원된 종료 모달 */}
+          {showExitModal && (
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] z-50 flex items-center justify-center p-6 select-none">
+              <div className="w-full max-w-[320px] bg-white rounded-[24px] px-6 py-10 flex flex-col items-center shadow-2xl">
+                <h3 className="text-2xl font-black text-[#111111] text-center">쭈템프 {stampsEarned}개 획득</h3>
+                <p className="text-sm font-medium text-zinc-400 mt-3 mb-10 text-center">
+                  총 {completedCount}명의 쭈꾸미에게 피드백을 전달했어요
+                </p>
+                <div className="flex flex-col gap-3 w-full">
+                  <button 
+                    onClick={handleContinueFeedback} 
+                    className="w-full py-4 bg-[#FF6200] text-white rounded-full font-bold text-sm text-center transition-transform active:scale-95"
+                  >
+                    계속 진행 하기
+                  </button>
+                  <button 
+                    onClick={handleExitFeedback} 
+                    className="w-full py-4 bg-[#FFFFFF] border-[2px] border-[#9D9D9D] text-[#111111] rounded-full font-bold text-sm text-center transition-transform active:scale-95"
+                  >
+                    나가기
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
 
         <div className="h-8 w-full flex justify-center items-center select-none pb-2">
@@ -427,6 +488,9 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     )
   }
 
+  // -------------------------------------------------------------
+  // 🌌 [2] 3D 원형 띠(Carousel) 레이아웃
+  // -------------------------------------------------------------
   const isCarouselPaused = userPosts.length > 0 && userPosts.some(p => (tick - p.createdAt) < 3000)
 
   return (
@@ -441,7 +505,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           transformStyle: "preserve-3d"
         }}
       >
-        {/* 💡 [수정] 바닥 그림자: 카메라 버튼에서 80px 위에 위치하도록 translateY(300px) 설정 */}
+        {/* 바닥 그림자 */}
         {userPosts.length > 0 && (
           <div 
             className="absolute top-1/2 left-1/2 pointer-events-none"
