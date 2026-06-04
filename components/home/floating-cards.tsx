@@ -92,24 +92,55 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     return () => observer.disconnect()
   }, [selectedPost])
 
-  // 🔄 띠 회전 & 업로드 정지 로직
+  // 🔄 띠 회전 & 정중앙 타겟 추적 로직
   useEffect(() => {
     let animationFrameId: number
 
     const rotate = () => {
       const now = Date.now()
-      // 💡 새 사진이 0번 인덱스라는 보장이 없으므로, 배열 안의 모든 사진 중 '가장 최근에 올라온 사진의 나이'를 계산합니다.
       const newestPostAge = userPostsRef.current.length > 0 
         ? Math.min(...userPostsRef.current.map(p => now - p.createdAt))
         : 9999
       
-      // 💡 업로드 후 3초 동안은 회전을 정지시켜 스며드는 모션을 안정적으로 보여줍니다.
+      // 업로드 후 3초 동안은 회전을 정지시켜 모세의 기적(공간 열리기) 모션을 보여줍니다.
       if (newestPostAge >= 3000) {
         angleRef.current -= 0.08 
       }
       
       setAutoAngle(angleRef.current)
       setTick(now) 
+
+      // 💡 [실시간 중앙 인덱스 추적]
+      // 돌고 있는 띠 중에 현재 어떤 인덱스가 가장 '화면 중앙(0도)'에 가까운지 지속적으로 계산해 둡니다.
+      const totalCards = userPostsRef.current.length
+      if (totalCards > 0) {
+        const CARD_WIDTH = 220
+        const GAP = 124
+        const HALF_CHORD = (CARD_WIDTH + GAP) / 2
+        let radius = 800
+        if (totalCards > 14) {
+          radius = HALF_CHORD / Math.sin(Math.PI / totalCards)
+        }
+        const anglePerCard = 2 * Math.asin(HALF_CHORD / radius) * (180 / Math.PI)
+        
+        let bestIndex = 0
+        let minDiff = 9999
+        for(let i = 0; i <= totalCards; i++) {
+            let visualAngle = (i * anglePerCard + angleRef.current) % 360
+            if (visualAngle < -180) visualAngle += 360
+            if (visualAngle > 180) visualAngle -= 360
+
+            if (Math.abs(visualAngle) < minDiff) {
+                minDiff = Math.abs(visualAngle)
+                bestIndex = i
+            }
+        }
+        // 계산된 최적의 중앙 인덱스를 window 객체에 저장하여 page.tsx가 업로드 시점에 읽어갈 수 있게 합니다.
+        if (typeof window !== 'undefined') {
+            (window as any).zzuggumiInsertIndex = bestIndex
+        }
+      }
+
       animationFrameId = requestAnimationFrame(rotate)
     }
 
@@ -454,10 +485,10 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   }
 
   // -------------------------------------------------------------
-  // 🌌 [2] 랜덤 타겟 궤도 스며들기 애니메이션
+  // 🌌 [2] 모세의 기적(공간 열어 파고들기) 애니메이션 레이아웃
   // -------------------------------------------------------------
   
-  // 전체 요소 중 하나라도 업로드된 지 3초가 안 지났다면 멈춤 상태
+  // 전체 요소 중 하나라도 업로드된 지 3초가 안 지났다면 멈춤 상태 (기존 사진들은 모세의 기적 진행 중)
   const isCarouselPaused = userPosts.length > 0 && userPosts.some(p => (tick - p.createdAt) < 3000)
 
   return (
@@ -486,9 +517,8 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             radius = HALF_CHORD / Math.sin(Math.PI / totalCards)
           }
 
-          const anglePerCard = 2 * Math.asin(HALF_CHORD / radius) * (180 / Math.PI)
+          const anglePerCard = totalCards > 0 ? 2 * Math.asin(HALF_CHORD / radius) * (180 / Math.PI) : 360
           
-          // 랜덤으로 삽입된 인덱스 'i'에 의해 고유한 타겟 궤도 각도가 정해집니다.
           const cardBaseAngle = anglePerCard * i
           const currentAngle = cardBaseAngle + autoAngle
           
@@ -497,7 +527,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
           const age = tick - post.createdAt
           
-          // 💡 새 사진 업로드 시 3초간의 애니메이션 로직 (인덱스 제한 없음)
+          // 새롭게 업로드된 사진 식별
           const isNewUpload = age < 3000
 
           let transformStr = `translateZ(-${radius}px) rotateY(${currentAngle}deg) translateZ(${radius}px)`
@@ -508,7 +538,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
           let transitionStr = "none"
 
-          // 새로운 사진이 파고들 자리를 기존 사진들이 부드럽게 열어줍니다.
+          // 💡 모세의 기적: 새 사진이 들어갈 자리를 마련하기 위해 기존 사진들이 부드럽게 옆으로 밀려나는 트랜지션
           if (isCarouselPaused && !isNewUpload) {
             transitionStr = "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s ease"
           }
@@ -517,7 +547,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             transitionStr = "none"
 
             if (age < 1500) {
-              // ⭐️ Phase 1 (0~1.5초): 랜덤한 각도를 무시하고 무조건 화면 중앙에 팝업되어 대기합니다.
+              // ⭐️ Phase 1 (0~1.5초): 화면 정중앙에 크게 팝업되어 대기합니다. (그 사이 띠는 1.2초 동안 모세의 기적으로 빈 공간을 오픈합니다)
               const introProgress = Math.min(1, age / 400) 
               const ease = 1 - Math.pow(1 - introProgress, 3)
               const currentScale = 0.8 + (1.1 - 0.8) * ease
@@ -526,7 +556,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
               zIndexVal = 2000 
               opacityVal = introProgress
             } else {
-              // ⭐️ Phase 2 (1.5초~3초): 랜덤하게 지정된 자신의 진짜 위치(currentAngle)를 찾아 뒤로 스며듭니다.
+              // ⭐️ Phase 2 (1.5초~3초): 화면 중앙에 열려있는 빈 공간으로 스르륵 밀려 들어가며 파고듭니다.
               const progress = Math.min(1, (age - 1500) / 1200) 
               const ease = 1 - Math.pow(1 - progress, 3)
               
@@ -538,6 +568,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
               
               const currentScale = 1.1 + (1 - 1.1) * ease
 
+              // 가장 짧은 궤적으로 회전하여 띠의 빈 슬롯에 완벽하게 안착합니다.
               let targetRot = currentAngle % 360
               if (targetRot > 180) targetRot -= 360
               if (targetRot < -180) targetRot += 360
