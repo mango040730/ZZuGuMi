@@ -258,9 +258,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     )
   }
 
-  // -------------------------------------------------------------
-  // 📱 [1] 스와이프 피드백 모드 레이아웃
-  // -------------------------------------------------------------
   if (selectedPost) {
     const activePost = currentQueueIndex < feedbackQueue.length ? feedbackQueue[currentQueueIndex] : feedbackQueue[feedbackQueue.length - 1]
     const nextPost = currentQueueIndex + 1 < feedbackQueue.length ? feedbackQueue[currentQueueIndex + 1] : null
@@ -405,7 +402,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                           e.stopPropagation()
                           handleVote(activePost.id, idx)
                         }}
-                        className="relative w-full bg-black/50 backdrop-blur-md border border-white/20 rounded-2xl overflow-hidden p-3 text-left transition-transform active:scale-95 shadow-none"
+                        className="relative w-full bg-black/50 backdrop-blur-md border border-white/20 rounded-2xl overflow-hidden p-3 text-left transition-transform active:scale-95"
                       >
                         <div
                           className="absolute top-0 left-0 bottom-0 bg-[#FF6200]/90 z-0 transition-all duration-500 ease-out"
@@ -485,7 +482,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   }
 
   // -------------------------------------------------------------
-  // 🌌 [2] 홈화면 3D 원통형(Carousel) 레이아웃
+  // 🌌 [2] 홈화면 3D 원통형(Carousel) 레이아웃 - 반사 효과 완전 제거됨
   // -------------------------------------------------------------
   
   const isCarouselPaused = userPosts.length > 0 && userPosts.some(p => (tick - p.createdAt) < 3000)
@@ -502,6 +499,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           transformStyle: "preserve-3d"
         }}
       >
+        {/* 💡 바닥의 거대한 원형띠 그림자는 유지 */}
         {userPosts.length > 0 && (
           <div 
             className="absolute top-1/2 left-1/2 pointer-events-none"
@@ -605,10 +603,9 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 zIndex: zIndexVal,
                 opacity: opacityVal,
                 willChange: "transform, opacity",
-                WebkitBoxReflect: "below 4px linear-gradient(to bottom, transparent 65%, rgba(0,0,0,0.5))"
+                // 💡 WebkitBoxReflect 속성을 완전히 삭제하여 바닥 거울 반사 효과를 제거했습니다!
               }}
             >
-              {/* 💡 개별 카드의 그림자(shadow)를 강제로 완벽하게 없애기 위해 shadow-none 속성을 명시적으로 추가했습니다. */}
               <div className="relative w-full h-full bg-white rounded-none overflow-hidden border border-zinc-200/40 shadow-none">
                 <Image 
                   src={post.imageData} 
