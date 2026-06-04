@@ -427,10 +427,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     )
   }
 
-  // -------------------------------------------------------------
-  // 🌌 [2] 홈화면 3D 원통형(Carousel) 레이아웃
-  // -------------------------------------------------------------
-  
   const isCarouselPaused = userPosts.length > 0 && userPosts.some(p => (tick - p.createdAt) < 3000)
 
   return (
@@ -445,14 +441,13 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           transformStyle: "preserve-3d"
         }}
       >
-        {/* 💡 [수정] 원형띠 그림자를 더 아래로(220px) 배치하여 부유감 극대화 */}
         {userPosts.length > 0 && (
           <div 
             className="absolute top-1/2 left-1/2 pointer-events-none"
             style={{
               width: "2400px",
               height: "2400px",
-              transform: "translate(-50%, -50%) translateY(220px) rotateX(90deg)",
+              transform: "translate(-50%, -50%) translateY(350px)",
               background: "radial-gradient(closest-side, transparent 55%, rgba(0,0,0,0.08) 66%, transparent 80%)",
               zIndex: 0
             }}
