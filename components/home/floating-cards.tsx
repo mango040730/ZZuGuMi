@@ -102,7 +102,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
         ? Math.min(...userPostsRef.current.map(p => now - p.createdAt))
         : 9999
       
-      // 업로드 후 3초 동안은 회전을 정지시켜 모세의 기적(공간 열리기) 모션을 보여줍니다.
       if (newestPostAge >= 3000) {
         angleRef.current -= 0.08 
       }
@@ -493,22 +492,21 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
       className="relative w-full h-full overflow-hidden bg-white touch-none"
     >
       <div 
-        // 💡 3D 컨테이너 전체를 상단바(헤더) 쪽으로 올리기 위해 -translate-y-[10vh] 속성 추가
         className="absolute inset-y-0 left-0 w-full h-[calc(100vh-80px)] pointer-events-none flex items-center justify-center -translate-y-[10vh]"
         style={{ 
           perspective: "1200px",
           transformStyle: "preserve-3d"
         }}
       >
-        {/* 💡 띠 전체를 아우르는 바닥 원형띠 그림자 (농도를 0.08로 높여 입체감 강조) */}
+        {/* 💡 억지스러운 3D rotateX를 없애고, 타원형(ellipse) 2D 그라데이션으로 자연스러운 바닥 띠 그림자를 구현했습니다. */}
         {userPosts.length > 0 && (
           <div 
             className="absolute top-1/2 left-1/2 pointer-events-none"
             style={{
-              width: "2400px",
-              height: "2400px",
-              transform: "translate(-50%, -50%) translateY(145px) rotateX(90deg)",
-              background: "radial-gradient(closest-side, transparent 55%, rgba(0,0,0,0.08) 66%, transparent 80%)",
+              width: "1600px",
+              height: "220px", // 세로 길이를 줄여 납작한 타원형 생성
+              transform: "translate(-50%, -50%) translateY(160px)", // rotateX 제거
+              background: "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.06) 60%, transparent 80%)",
               zIndex: 0
             }}
           />
