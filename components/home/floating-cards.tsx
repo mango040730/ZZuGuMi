@@ -382,7 +382,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 {nextPost.questionText && (
                   <>
                     <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/65 to-transparent pointer-events-none z-10" />
-                    <p className="absolute top-3 left-3 right-3 text-[13px] text-white font-semibold leading-snug line-clamp-2 z-20 drop-shadow">
+                    <p className="absolute top-3 left-3 right-3 text-[24px] text-white font-semibold leading-snug line-clamp-2 z-20 drop-shadow">
                       {nextPost.questionText}
                     </p>
                   </>
@@ -403,7 +403,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
               {activePost.questionText && (
                 <>
                   <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/65 to-transparent pointer-events-none z-10" />
-                  <p className="absolute top-3 left-3 right-3 text-[13px] text-white font-semibold leading-snug line-clamp-2 z-20 drop-shadow">
+                  <p className="absolute top-3 left-3 right-3 text-[24px] text-white font-semibold leading-snug line-clamp-2 z-20 drop-shadow">
                     {activePost.questionText}
                   </p>
                 </>
@@ -632,7 +632,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 if (carouselWasDraggedRef.current) return
                 if (cosVal > 0.8 || isNewUpload) handleCardClick(i)
               }}
-              className="absolute w-[263px] h-[350px] origin-center pointer-events-auto cursor-pointer"
+              className="absolute w-[263px] h-[347px] origin-center pointer-events-auto cursor-pointer"
               style={{
                 transform: transformStr,
                 transition: transitionStr,
