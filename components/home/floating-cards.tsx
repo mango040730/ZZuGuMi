@@ -113,7 +113,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
       const totalCards = userPostsRef.current.length
       if (totalCards > 0) {
-        const CARD_WIDTH = 220
+        const CARD_WIDTH = 190
         const GAP = 124
         const HALF_CHORD = (CARD_WIDTH + GAP) / 2
         let radius = 800
@@ -358,7 +358,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
           <div 
             ref={imageContainerRef}
-            className="relative h-full max-h-[75vh] aspect-[22/29] shrink-0 select-none"
+            className="relative h-full max-h-[75vh] max-w-full aspect-[22/29] shrink-0 select-none"
             style={{ touchAction: "none" }}
             onMouseDown={(e) => handleSwipeStart(e.clientY)} 
             onMouseMove={(e) => handleSwipeMove(e.clientY)}
@@ -539,7 +539,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
         {userPosts.map((post, i) => {
           const totalCards = userPosts.length
           
-          const CARD_WIDTH = 440
+          const CARD_WIDTH = 380
           const GAP = 62
           const CHORD = CARD_WIDTH + GAP
           const HALF_CHORD = CHORD / 2
@@ -616,7 +616,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 if (carouselWasDraggedRef.current) return
                 if (cosVal > 0.8 || isNewUpload) handleCardClick(i)
               }}
-              className="absolute w-[440px] h-[580px] origin-center pointer-events-auto cursor-pointer"
+              className="absolute w-[380px] h-[500px] origin-center pointer-events-auto cursor-pointer"
               style={{
                 transform: transformStr,
                 transition: transitionStr,
