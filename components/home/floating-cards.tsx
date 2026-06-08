@@ -190,7 +190,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     if (carouselTotalDragRef.current > 5) {
       carouselWasDraggedRef.current = true
     }
-    const angleDelta = deltaX * 0.2
+    const angleDelta = deltaX * 0.12
     angleRef.current += angleDelta
     carouselVelocityRef.current = angleDelta
     setAutoAngle(angleRef.current)
@@ -537,13 +537,13 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
       >
         {/* 바닥 그림자 */}
         {userPosts.length > 0 && (
-          <div 
+          <div
             className="absolute top-1/2 left-1/2 pointer-events-none"
             style={{
-              width: "2400px",
-              height: "2400px",
+              width: "1800px",
+              height: "700px",
               transform: "translate(-50%, -50%) translateY(300px) rotateX(90deg)",
-              background: "radial-gradient(closest-side, transparent 55%, rgba(0,0,0,0.08) 66%, transparent 80%)",
+              background: "radial-gradient(ellipse, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.08) 45%, transparent 72%)",
               zIndex: 0
             }}
           />
