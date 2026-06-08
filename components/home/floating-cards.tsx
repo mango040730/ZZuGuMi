@@ -52,6 +52,16 @@ export function FloatingCards({ userPosts = [], onVote }: FloatingCardsProps) {
   const imageContainerRef = useRef<HTMLDivElement>(null)
   const [imageWidth, setImageWidth] = useState<number | undefined>(undefined)
 
+  const [votedOptions, setVotedOptions] = useState<Record<string, number>>(() => {
+    if (typeof window === 'undefined') return {}
+    try { return JSON.parse(localStorage.getItem('zzuggumi_votes') || '{}') } catch { return {} }
+  })
+
+  const [reviewedPosts, setReviewedPosts] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set()
+    try { return new Set(JSON.parse(localStorage.getItem('zzuggumi_reviewed') || '[]')) } catch { return new Set() }
+  })
+
   const carouselDragRef = useRef(false)
   const carouselLastXRef = useRef(0)
   const carouselVelocityRef = useRef(0)
@@ -59,18 +69,29 @@ export function FloatingCards({ userPosts = [], onVote }: FloatingCardsProps) {
   const carouselWasDraggedRef = useRef(false)
 
   const handleVote = (postId: string, optionIndex: number) => {
+    const prevVote = votedOptions[postId]
+    if (prevVote === optionIndex) return
+
     let updatedPoll: PollOption[] | undefined
     setFeedbackQueue(prevQueue => {
       const newQueue = [...prevQueue]
       const qIdx = newQueue.findIndex(p => p.id === postId)
       if (qIdx > -1 && newQueue[qIdx].poll) {
         const poll = [...newQueue[qIdx].poll!]
+        if (prevVote !== undefined && poll[prevVote]) {
+          poll[prevVote] = { ...poll[prevVote], votes: Math.max(0, poll[prevVote].votes - 1) }
+        }
         poll[optionIndex] = { ...poll[optionIndex], votes: poll[optionIndex].votes + 1 }
         newQueue[qIdx] = { ...newQueue[qIdx], poll }
         updatedPoll = poll
       }
       return newQueue
     })
+
+    const newVotedOptions = { ...votedOptions, [postId]: optionIndex }
+    setVotedOptions(newVotedOptions)
+    try { localStorage.setItem('zzuggumi_votes', JSON.stringify(newVotedOptions)) } catch {}
+
     if (updatedPoll) onVote?.(postId, optionIndex, updatedPoll)
   }
 
@@ -192,23 +213,24 @@ export function FloatingCards({ userPosts = [], onVote }: FloatingCardsProps) {
   }
 
   const handleCardClick = (startIndex: number) => {
-    const queue = [
+    const allPosts = [
       ...userPosts.slice(startIndex),
       ...userPosts.slice(0, startIndex),
     ]
+    const queue = allPosts.filter(post => !reviewedPosts.has(post.id))
     setFeedbackQueue(queue)
     setCurrentQueueIndex(0)
     setSelectedPost(userPosts[startIndex])
     setSwipeOffset(0)
     setSwipeOutDirection(null)
-    setShowExitModal(false)
+    setShowExitModal(queue.length === 0)
     setShowStampToast(false)
 
     const hideTutorial = localStorage.getItem("hide_feedback_tutorial_v2")
     if (hideTutorial === "true") {
       setShowTutorial(false)
     } else {
-      setShowTutorial(true)
+      setShowTutorial(queue.length > 0)
     }
   }
 
@@ -237,6 +259,14 @@ export function FloatingCards({ userPosts = [], onVote }: FloatingCardsProps) {
   }
 
   const triggerSwipeOut = (direction: "up" | "down") => {
+    const currentPost = feedbackQueue[currentQueueIndex]
+    if (currentPost) {
+      const newReviewed = new Set(reviewedPosts)
+      newReviewed.add(currentPost.id)
+      setReviewedPosts(newReviewed)
+      try { localStorage.setItem('zzuggumi_reviewed', JSON.stringify([...newReviewed])) } catch {}
+    }
+
     setSwipeOutDirection(direction)
     setSwipeOffset(direction === "down" ? 800 : -800)
 
@@ -289,7 +319,7 @@ export function FloatingCards({ userPosts = [], onVote }: FloatingCardsProps) {
     const nextCardOpacity = Math.min(1, 0.8 + (Math.abs(swipeOffset) / 300) * 0.2)
 
     return (
-      <div className="fixed inset-0 bg-white z-50 flex flex-col justify-between overflow-hidden">
+      <div className="fixed inset-0 bg-white z-50 flex flex-col justify-between overflow-hidden" onClick={() => { if (showStampToast) setShowStampToast(false) }}>
         <div className="absolute inset-0 z-0 pointer-events-none">
           {swipeOffset < -20 && (
             <div 
@@ -434,7 +464,8 @@ export function FloatingCards({ userPosts = [], onVote }: FloatingCardsProps) {
                   {activePost.poll.map((opt, idx) => {
                     const totalVotes = activePost.poll!.reduce((acc, curr) => acc + curr.votes, 0)
                     const percentage = totalVotes === 0 ? 0 : Math.round((opt.votes / totalVotes) * 100)
-                    
+                    const isSelected = votedOptions[activePost.id] === idx
+
                     return (
                       <button
                         key={idx}
@@ -442,7 +473,11 @@ export function FloatingCards({ userPosts = [], onVote }: FloatingCardsProps) {
                           e.stopPropagation()
                           handleVote(activePost.id, idx)
                         }}
-                        className="relative w-full bg-black/50 backdrop-blur-md border border-white/20 rounded-2xl overflow-hidden p-3 text-left transition-transform active:scale-95"
+                        className={`relative w-full backdrop-blur-md rounded-2xl overflow-hidden p-3 text-left transition-transform active:scale-95 ${
+                          isSelected
+                            ? "bg-[#FF6200]/80 border-2 border-white"
+                            : "bg-black/50 border border-white/20"
+                        }`}
                       >
                         <div
                           className="absolute top-0 left-0 bottom-0 bg-[#FF6200]/90 z-0 transition-all duration-500 ease-out"
