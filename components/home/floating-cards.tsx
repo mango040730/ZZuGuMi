@@ -190,7 +190,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     if (carouselTotalDragRef.current > 5) {
       carouselWasDraggedRef.current = true
     }
-    const angleDelta = -deltaX * 0.35
+    const angleDelta = deltaX * 0.2
     angleRef.current += angleDelta
     carouselVelocityRef.current = angleDelta
     setAutoAngle(angleRef.current)
