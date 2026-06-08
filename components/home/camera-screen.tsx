@@ -86,16 +86,13 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
 
     if (!video || !canvas || !container) return
 
-    const targetAspect = container.clientWidth / container.clientHeight  // 화면 비율로 캡처
+    const targetAspect = 22 / 29
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
-    // localStorage 용량 절약을 위해 저장 해상도를 720px 기준으로 제한
-    const CAPTURE_WIDTH = 720
-
     if (isLandscapeStream) {
-      canvas.width = CAPTURE_WIDTH
-      canvas.height = Math.round(CAPTURE_WIDTH / targetAspect)
+      canvas.width = 1080
+      canvas.height = Math.round(1080 / targetAspect)
 
       ctx.translate(canvas.width / 2, canvas.height / 2)
       const rotDir = facingMode === "user" ? -1 : 1
@@ -130,8 +127,8 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
       const sourceX = cropX + (cropWidth - sourceWidth) / 2
       const sourceY = cropY + (cropHeight - sourceHeight) / 2
 
-      canvas.width = CAPTURE_WIDTH
-      canvas.height = Math.round(CAPTURE_WIDTH / targetAspect)
+      canvas.width = 1080
+      canvas.height = Math.round(1080 / targetAspect)
 
       if (facingMode === "user") {
         ctx.translate(canvas.width, 0)
@@ -141,7 +138,7 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
       ctx.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, canvas.width, canvas.height)
     }
 
-    const imageData = canvas.toDataURL("image/jpeg", 0.85)
+    const imageData = canvas.toDataURL("image/jpeg", 0.9)
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop())
     }

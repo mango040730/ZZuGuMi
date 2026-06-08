@@ -347,8 +347,11 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           </button>
         </div>
 
-        <div className="flex-1 w-full px-5 pb-2 min-h-0 flex flex-col items-center relative z-10">
-          <div className="w-full mb-3">
+        <div className="flex-1 w-full px-5 pb-2 min-h-0 flex flex-col justify-center items-center relative z-10">
+          <div
+            className="flex justify-start mb-3"
+            style={{ width: imageWidth ? `${imageWidth}px` : '100%', maxWidth: '100%' }}
+          >
             <span className="text-[17px] font-bold text-zinc-800 tracking-wider">
               {completedCount}개 피드백 중
             </span>
@@ -356,7 +359,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
           <div
             ref={imageContainerRef}
-            className="relative w-full flex-1 min-h-0 select-none"
+            className="relative h-full max-h-[75vh] max-w-full aspect-[22/29] shrink-0 select-none"
             style={{ touchAction: "none" }}
             onMouseDown={(e) => handleSwipeStart(e.clientY)} 
             onMouseMove={(e) => handleSwipeMove(e.clientY)}

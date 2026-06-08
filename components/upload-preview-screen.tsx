@@ -295,7 +295,7 @@ export function UploadPreviewScreen({
         }
       }
 
-      const mergedImageData = canvas.toDataURL("image/jpeg", 0.85)
+      const mergedImageData = canvas.toDataURL("image/jpeg", 0.9)
       onUpload(questionText, mergedImageData, pollOptions)
     } catch (e) {
       console.error(e)
@@ -313,8 +313,8 @@ export function UploadPreviewScreen({
         </button>
       </div>
 
-      <div className="flex-1 w-full px-4 pb-2 min-h-0 flex flex-col">
-        <div ref={containerRef} className={`relative w-full flex-1 min-h-0 bg-zinc-900 rounded-[12px] overflow-hidden ${step === "mosaic" && (isMosaicMode || isEraserMode) ? "touch-none cursor-crosshair" : ""}`}
+      <div className="flex-1 w-full px-4 pb-2 min-h-0 flex justify-center items-center">
+        <div ref={containerRef} className={`relative h-full max-h-[75vh] aspect-[22/29] bg-zinc-900 rounded-[12px] overflow-hidden shrink-0 ${step === "mosaic" && (isMosaicMode || isEraserMode) ? "touch-none cursor-crosshair" : ""}`}
           onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp}>
           {capturedImage && <img src={capturedImage} alt="Captured" className="absolute inset-0 w-full h-full object-cover pointer-events-none" />}
 
