@@ -346,7 +346,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           </button>
         </div>
 
-        <div className="flex-1 w-full px-4 pb-2 min-h-0 flex flex-col justify-center items-center relative z-10">
+        <div className="flex-1 w-full px-5 pb-2 min-h-0 flex flex-col justify-center items-center relative z-10">
           <div 
             className="flex justify-start mb-3"
             style={{ width: imageWidth ? `${imageWidth}px` : '100%', maxWidth: '100%' }}
@@ -370,7 +370,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           >
             {nextPost && !showExitModal && (
               <div 
-                className="absolute inset-0 w-full h-full rounded-none overflow-hidden bg-white border border-zinc-200/40 pointer-events-none origin-center shadow-none"
+                className="absolute inset-0 w-full h-full rounded-[12px] overflow-hidden bg-white border border-zinc-200/40 pointer-events-none origin-center shadow-none"
                 style={{
                   transform: `scale(${nextCardScale}) translateY(${(1 - nextCardScale) * 120}px)`,
                   opacity: nextCardOpacity,
@@ -383,7 +383,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             )}
 
             <div
-              className="absolute inset-0 w-full h-full rounded-none bg-white border border-zinc-200/40 overflow-hidden shadow-none"
+              className="absolute inset-0 w-full h-full rounded-[12px] bg-white border border-zinc-200/40 overflow-hidden shadow-none"
               style={{
                 transform: `translate3d(0, ${swipeOffset}px, 0)`,
                 transition: (isDragging || isResetting) ? "none" : "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
@@ -535,27 +535,14 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           transformStyle: "preserve-3d"
         }}
       >
-        {/* 바닥 그림자 */}
-        {userPosts.length > 0 && (
-          <div
-            className="absolute top-1/2 left-1/2 pointer-events-none"
-            style={{
-              width: "1800px",
-              height: "700px",
-              transform: "translate(-50%, -50%) translateY(300px) rotateX(90deg)",
-              background: "radial-gradient(ellipse, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.08) 45%, transparent 72%)",
-              zIndex: 0
-            }}
-          />
-        )}
 
         {userPosts.map((post, i) => {
           const totalCards = userPosts.length
           
-          const CARD_WIDTH = 220
-          const GAP = 124
-          const CHORD = CARD_WIDTH + GAP 
-          const HALF_CHORD = CHORD / 2 
+          const CARD_WIDTH = 440
+          const GAP = 62
+          const CHORD = CARD_WIDTH + GAP
+          const HALF_CHORD = CHORD / 2
 
           let radius = 800
 
@@ -629,7 +616,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 if (carouselWasDraggedRef.current) return
                 if (cosVal > 0.8 || isNewUpload) handleCardClick(i)
               }}
-              className="absolute w-[220px] h-[290px] origin-center pointer-events-auto cursor-pointer"
+              className="absolute w-[440px] h-[580px] origin-center pointer-events-auto cursor-pointer"
               style={{
                 transform: transformStr,
                 transition: transitionStr,
@@ -638,7 +625,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 willChange: "transform, opacity"
               }}
             >
-              <div className="relative w-full h-full bg-white rounded-none overflow-hidden border border-zinc-200/40 shadow-none">
+              <div className="relative w-full h-full bg-white rounded-[12px] overflow-hidden border border-zinc-200/40 shadow-none">
                 <Image 
                   src={post.imageData} 
                   alt="Style Space Element" 
@@ -648,11 +635,12 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 />
 
                 {post.questionText && (
-                  <div className="absolute top-2 left-2 right-2 bg-black/40 backdrop-blur-sm p-2 rounded-lg max-h-[50px] overflow-hidden">
-                    <p className="text-[10px] text-white font-semibold leading-tight line-clamp-2">
+                  <>
+                    <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/65 to-transparent pointer-events-none z-10" />
+                    <p className="absolute top-3 left-3 right-3 text-[13px] text-white font-semibold leading-snug line-clamp-2 z-20 drop-shadow">
                       {post.questionText}
                     </p>
-                  </div>
+                  </>
                 )}
               </div>
             </div>
