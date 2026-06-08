@@ -219,8 +219,8 @@ export function UploadPreviewScreen({
       })
 
       const { clientWidth } = container
-      const outWidth = 880
-      const outHeight = 1160
+      const outWidth = img.width
+      const outHeight = img.height
       const canvas = document.createElement("canvas")
       canvas.width = outWidth
       canvas.height = outHeight
@@ -230,12 +230,7 @@ export function UploadPreviewScreen({
         return
       }
 
-      const scale = Math.max(outWidth / img.width, outHeight / img.height)
-      const sw = outWidth / scale
-      const sh = outHeight / scale
-      const sx = (img.width - sw) / 2
-      const sy = (img.height - sh) / 2
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outWidth, outHeight)
+      ctx.drawImage(img, 0, 0, outWidth, outHeight)
 
       if (strokes.length > 0 || currentStroke.length > 0) {
         const strokeScale = outWidth / clientWidth
@@ -260,7 +255,7 @@ export function UploadPreviewScreen({
         if (smallCtx && mosaicCtx) {
           smallCtx.imageSmoothingEnabled = true
           smallCtx.imageSmoothingQuality = "high"
-          smallCtx.drawImage(img, sx, sy, sw, sh, 0, 0, smallW, smallH)
+          smallCtx.drawImage(img, 0, 0, outWidth, outHeight, 0, 0, smallW, smallH)
 
           mosaicCtx.imageSmoothingEnabled = false
           mosaicCtx.drawImage(smallCanvas, 0, 0, outWidth, outHeight)
@@ -300,26 +295,6 @@ export function UploadPreviewScreen({
         }
       }
 
-      if (questionText.trim().length > 0) {
-        const textScale = outWidth / clientWidth
-        const fontSize = Math.round(30 * textScale) 
-        ctx.font = `bold ${fontSize}px sans-serif`
-        ctx.fillStyle = "white"
-        ctx.textAlign = "left"
-        ctx.textBaseline = "top"
-        ctx.shadowColor = "rgba(0, 0, 0, 0.6)"
-        ctx.shadowBlur = 12 * textScale
-        ctx.shadowOffsetX = 0
-        ctx.shadowOffsetY = 4 * textScale
-        const padding = 24 * textScale
-        const maxWidth = outWidth - (padding * 2)
-        const words = questionText.split("\n")
-        let currentY = padding
-        words.forEach(line => {
-          ctx.fillText(line, padding, currentY, maxWidth)
-          currentY += fontSize * 1.3 
-        })
-      }
       const mergedImageData = canvas.toDataURL("image/jpeg", 0.9)
       onUpload(questionText, mergedImageData, pollOptions)
     } catch (e) {

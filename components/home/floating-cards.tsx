@@ -379,6 +379,14 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 }}
               >
                 <Image src={nextPost.imageData} alt="Next Style" fill className="object-cover pointer-events-none" unoptimized />
+                {nextPost.questionText && (
+                  <>
+                    <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/65 to-transparent pointer-events-none z-10" />
+                    <p className="absolute top-3 left-3 right-3 text-[13px] text-white font-semibold leading-snug line-clamp-2 z-20 drop-shadow">
+                      {nextPost.questionText}
+                    </p>
+                  </>
+                )}
               </div>
             )}
 
@@ -392,6 +400,14 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
               }}
             >
               <Image src={activePost.imageData} alt="Current Style" fill className="object-cover pointer-events-none" unoptimized />
+              {activePost.questionText && (
+                <>
+                  <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/65 to-transparent pointer-events-none z-10" />
+                  <p className="absolute top-3 left-3 right-3 text-[13px] text-white font-semibold leading-snug line-clamp-2 z-20 drop-shadow">
+                    {activePost.questionText}
+                  </p>
+                </>
+              )}
 
               {/* ⬆️ 위로 스와이프: 주황색 그라데이션 & ThumbsUp 아이콘 */}
               {swipeOffset < -20 && (
@@ -574,24 +590,24 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             transitionStr = "none"
 
             if (age < 1500) {
-              const introProgress = Math.min(1, age / 400) 
+              const introProgress = Math.min(1, age / 400)
               const ease = 1 - Math.pow(1 - introProgress, 3)
-              const currentScale = 0.8 + (1.1 - 0.8) * ease
-              
-              transformStr = `translateZ(0px) rotateY(0deg) translateZ(350px) scale(${currentScale})`
-              zIndexVal = 2000 
+              const currentScale = 0.85 + (1.0 - 0.85) * ease
+
+              transformStr = `translateZ(0px) rotateY(0deg) translateZ(180px) scale(${currentScale})`
+              zIndexVal = 2000
               opacityVal = introProgress
             } else {
-              const progress = Math.min(1, (age - 1500) / 1200) 
+              const progress = Math.min(1, (age - 1500) / 1200)
               const ease = 1 - Math.pow(1 - progress, 3)
-              
+
               const targetRadiusNeg = -radius
               const currentRadiusNeg = 0 + (targetRadiusNeg - 0) * ease
-              
+
               const targetRadiusPos = radius
-              const currentRadiusPos = 350 + (targetRadiusPos - 350) * ease
-              
-              const currentScale = 1.1 + (1 - 1.1) * ease
+              const currentRadiusPos = 180 + (targetRadiusPos - 180) * ease
+
+              const currentScale = 1.0 + (1 - 1.0) * ease
 
               let targetRot = currentAngle % 360
               if (targetRot > 180) targetRot -= 360
