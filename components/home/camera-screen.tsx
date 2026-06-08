@@ -86,14 +86,14 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
 
     if (!video || !canvas || !container) return
 
-    const screenAspect = container.clientWidth / container.clientHeight
+    const targetAspect = 22 / 29  // 피드백/업로드 프리뷰 프레임과 동일한 비율
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
     if (isLandscapeStream) {
       // 가로 스트림(videoWidth > videoHeight)을 90° 회전해 세로 캔버스에 캡처
       canvas.width = 1080
-      canvas.height = Math.round(1080 / screenAspect)
+      canvas.height = Math.round(1080 / targetAspect)
 
       ctx.translate(canvas.width / 2, canvas.height / 2)
       const rotDir = facingMode === "user" ? -1 : 1
@@ -110,18 +110,18 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
 
       ctx.drawImage(video, srcX, srcY, srcW, srcH, -dstW / 2, -dstH / 2, dstW, dstH)
     } else {
-      // 세로(portrait) 스트림: 기존 object-cover 크롭 방식
+      // 세로(portrait) 스트림: 22:29 비율로 중앙 크롭
       const videoAspect = video.videoWidth / video.videoHeight
       let cropWidth = video.videoWidth
       let cropHeight = video.videoHeight
       let cropX = 0
       let cropY = 0
 
-      if (videoAspect > screenAspect) {
-        cropWidth = video.videoHeight * screenAspect
+      if (videoAspect > targetAspect) {
+        cropWidth = video.videoHeight * targetAspect
         cropX = (video.videoWidth - cropWidth) / 2
       } else {
-        cropHeight = video.videoWidth / screenAspect
+        cropHeight = video.videoWidth / targetAspect
         cropY = (video.videoHeight - cropHeight) / 2
       }
 
@@ -131,7 +131,7 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
       const sourceY = cropY + (cropHeight - sourceHeight) / 2
 
       canvas.width = 1080
-      canvas.height = Math.round(1080 / screenAspect)
+      canvas.height = Math.round(1080 / targetAspect)
 
       if (facingMode === "user") {
         ctx.translate(canvas.width, 0)

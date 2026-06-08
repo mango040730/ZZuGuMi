@@ -113,7 +113,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
       const totalCards = userPostsRef.current.length
       if (totalCards > 0) {
-        const CARD_WIDTH = 190
+        const CARD_WIDTH = 132
         const GAP = 124
         const HALF_CHORD = (CARD_WIDTH + GAP) / 2
         let radius = 800
@@ -539,7 +539,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
         {userPosts.map((post, i) => {
           const totalCards = userPosts.length
           
-          const CARD_WIDTH = 380
+          const CARD_WIDTH = 263
           const GAP = 62
           const CHORD = CARD_WIDTH + GAP
           const HALF_CHORD = CHORD / 2
@@ -616,7 +616,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
                 if (carouselWasDraggedRef.current) return
                 if (cosVal > 0.8 || isNewUpload) handleCardClick(i)
               }}
-              className="absolute w-[380px] h-[500px] origin-center pointer-events-auto cursor-pointer"
+              className="absolute w-[263px] h-[350px] origin-center pointer-events-auto cursor-pointer"
               style={{
                 transform: transformStr,
                 transition: transitionStr,
