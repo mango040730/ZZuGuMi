@@ -52,12 +52,10 @@ export function FloatingCards({ userPosts = [], onVote }: FloatingCardsProps) {
   const imageContainerRef = useRef<HTMLDivElement>(null)
   const [imageWidth, setImageWidth] = useState<number | undefined>(undefined)
 
-  const votedOptionsRef = useRef<Record<string, number>>(
-    typeof window !== 'undefined'
-      ? (() => { try { return JSON.parse(localStorage.getItem('zzuggumi_votes') || '{}') } catch { return {} } })()
-      : {}
-  )
-  const [votedOptions, setVotedOptions] = useState<Record<string, number>>(votedOptionsRef.current)
+  const [votedOptions, setVotedOptions] = useState<Record<string, number>>(() => {
+    if (typeof window === 'undefined') return {}
+    try { return JSON.parse(localStorage.getItem('zzuggumi_votes') || '{}') } catch { return {} }
+  })
 
   const [reviewedPosts, setReviewedPosts] = useState<Set<string>>(() => {
     if (typeof window === 'undefined') return new Set()
@@ -72,25 +70,30 @@ export function FloatingCards({ userPosts = [], onVote }: FloatingCardsProps) {
   const carouselWasDraggedRef = useRef(false)
 
   const handleVote = (postId: string, optionIndex: number) => {
-    const prevVote = votedOptionsRef.current[postId]
+    const prevVote = votedOptions[postId]
     if (prevVote === optionIndex) return
 
-    // 즉시 동기 처리 → 빠른 이중 클릭 방지
-    votedOptionsRef.current = { ...votedOptionsRef.current, [postId]: optionIndex }
-
-    const post = feedbackQueue.find(p => p.id === postId)
-    if (!post?.poll) return
-
-    const poll = post.poll.map((opt, i) => {
-      if (i === prevVote) return { ...opt, votes: Math.max(0, opt.votes - 1) }
-      if (i === optionIndex) return { ...opt, votes: opt.votes + 1 }
-      return opt
+    let updatedPoll: PollOption[] | undefined
+    setFeedbackQueue(prevQueue => {
+      const newQueue = [...prevQueue]
+      const qIdx = newQueue.findIndex(p => p.id === postId)
+      if (qIdx > -1 && newQueue[qIdx].poll) {
+        const poll = [...newQueue[qIdx].poll!]
+        if (prevVote !== undefined && poll[prevVote]) {
+          poll[prevVote] = { ...poll[prevVote], votes: Math.max(0, poll[prevVote].votes - 1) }
+        }
+        poll[optionIndex] = { ...poll[optionIndex], votes: poll[optionIndex].votes + 1 }
+        newQueue[qIdx] = { ...newQueue[qIdx], poll }
+        updatedPoll = poll
+      }
+      return newQueue
     })
 
-    setFeedbackQueue(prev => prev.map(p => p.id === postId ? { ...p, poll } : p))
-    setVotedOptions({ ...votedOptionsRef.current })
-    try { localStorage.setItem('zzuggumi_votes', JSON.stringify(votedOptionsRef.current)) } catch {}
-    onVote?.(postId, optionIndex, poll)
+    const newVotedOptions = { ...votedOptions, [postId]: optionIndex }
+    setVotedOptions(newVotedOptions)
+    try { localStorage.setItem('zzuggumi_votes', JSON.stringify(newVotedOptions)) } catch {}
+
+    if (updatedPoll) onVote?.(postId, optionIndex, updatedPoll)
   }
 
   useEffect(() => {
