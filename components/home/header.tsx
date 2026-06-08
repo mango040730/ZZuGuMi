@@ -4,7 +4,7 @@ import { User } from "lucide-react"
 
 export function Header() {
   return (
-    <header className="flex items-center justify-between px-5 pt-5 pb-4 bg-white sticky top-0 z-40 border-b border-zinc-100">
+    <header className="flex items-center justify-between px-5 pb-4 bg-white sticky top-0 z-40 border-b border-zinc-100" style={{ paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
       <h1 className="text-2xl font-bold tracking-tight text-foreground">
         ZZuGGUM<span className="text-[#FF6200]">i</span>
       </h1>

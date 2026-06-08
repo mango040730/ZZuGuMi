@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
@@ -29,14 +29,20 @@ export const metadata: Metadata = {
   },
 }
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="bg-background">
-      <body className="font-sans antialiased bg-white md:bg-zinc-200 min-h-screen flex items-start justify-center md:items-center">
+    <html lang="en" className="h-full">
+      <body className="h-full font-sans antialiased bg-white md:bg-zinc-200 md:min-h-screen md:flex md:items-center md:justify-center">
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>

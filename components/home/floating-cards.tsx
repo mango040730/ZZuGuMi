@@ -529,7 +529,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
       onPointerCancel={handleCarouselPointerUp}
     >
       <div 
-        className="absolute inset-y-0 left-0 w-full h-[calc(100vh-80px)] pointer-events-none flex items-center justify-center -translate-y-[10vh]"
+        className="absolute inset-0 w-full h-full pointer-events-none flex items-center justify-center -translate-y-[10%]"
         style={{ 
           perspective: "1200px",
           transformStyle: "preserve-3d"
