@@ -19,9 +19,10 @@ export interface Post {
 
 interface FloatingCardsProps {
   userPosts?: Post[]
+  onVote?: (postId: string, optionIndex: number, updatedPoll: PollOption[]) => void
 }
 
-export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
+export function FloatingCards({ userPosts = [], onVote }: FloatingCardsProps) {
   const [autoAngle, setAutoAngle] = useState(0)
   const angleRef = useRef(0)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -58,29 +59,19 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   const carouselWasDraggedRef = useRef(false)
 
   const handleVote = (postId: string, optionIndex: number) => {
+    let updatedPoll: PollOption[] | undefined
     setFeedbackQueue(prevQueue => {
       const newQueue = [...prevQueue]
       const qIdx = newQueue.findIndex(p => p.id === postId)
       if (qIdx > -1 && newQueue[qIdx].poll) {
-        const updatedPoll = [...newQueue[qIdx].poll!]
-        updatedPoll[optionIndex] = { 
-          ...updatedPoll[optionIndex], 
-          votes: updatedPoll[optionIndex].votes + 1 
-        }
-        newQueue[qIdx] = { ...newQueue[qIdx], poll: updatedPoll }
+        const poll = [...newQueue[qIdx].poll!]
+        poll[optionIndex] = { ...poll[optionIndex], votes: poll[optionIndex].votes + 1 }
+        newQueue[qIdx] = { ...newQueue[qIdx], poll }
+        updatedPoll = poll
       }
       return newQueue
     })
-
-    const savedPosts = localStorage.getItem("zzuggumi_posts")
-    if (savedPosts) {
-      const parsed = JSON.parse(savedPosts) as Post[]
-      const postIdx = parsed.findIndex(p => p.id === postId)
-      if (postIdx > -1 && parsed[postIdx].poll) {
-        parsed[postIdx].poll![optionIndex].votes += 1
-        localStorage.setItem("zzuggumi_posts", JSON.stringify(parsed))
-      }
-    }
+    if (updatedPoll) onVote?.(postId, optionIndex, updatedPoll)
   }
 
   useEffect(() => {
