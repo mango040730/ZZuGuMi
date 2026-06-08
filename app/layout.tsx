@@ -42,7 +42,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full">
-      <body className="h-full font-sans antialiased bg-white md:bg-zinc-200 md:min-h-screen md:flex md:items-center md:justify-center">
+      <body className="h-full flex flex-col font-sans antialiased bg-white md:bg-zinc-200 md:flex-row md:min-h-screen md:items-center md:justify-center">
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>

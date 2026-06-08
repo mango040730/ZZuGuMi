@@ -15,12 +15,16 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
   const [isReady, setIsReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment")
-  
+
   const [zoomLevel, setZoomLevel] = useState<number>(1)
   const zoomLevels = [1, 2, 3]
 
   const initialDistance = useRef<number | null>(null)
   const initialZoom = useRef<number>(1)
+
+  // Safari iOS는 가로(landscape) 픽셀 버퍼를 반환할 수 있다.
+  // 이 경우 video를 CSS로 90° 회전해 세로 화각으로 보여준다.
+  const [isLandscapeStream, setIsLandscapeStream] = useState(false)
 
   useEffect(() => {
     async function startCamera() {
@@ -28,22 +32,28 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
         streamRef.current.getTracks().forEach(track => track.stop())
       }
       setIsReady(false)
-      
+      setIsLandscapeStream(false)
+
       try {
+        // height 제약을 제거해 Safari가 망원(2x) 렌즈 대신 광각(1x) 렌즈를 선택하도록 한다.
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: facingMode,
             width: { ideal: 1080 },
-            height: { ideal: 1920 },
           }
         })
-        
+
         streamRef.current = stream
-        
+
         if (videoRef.current) {
           videoRef.current.srcObject = stream
           videoRef.current.onloadedmetadata = () => {
-            videoRef.current?.play()
+            const v = videoRef.current!
+            // 스트림이 가로이고 화면이 세로이면 회전 모드 활성화
+            if (v.videoWidth > v.videoHeight && window.innerWidth < window.innerHeight) {
+              setIsLandscapeStream(true)
+            }
+            v.play()
             setIsReady(true)
           }
         }
@@ -73,59 +83,74 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
     const video = videoRef.current
     const canvas = canvasRef.current
     const container = video?.parentElement
-    
+
     if (!video || !canvas || !container) return
-    
+
     const screenAspect = container.clientWidth / container.clientHeight
-    const videoAspect = video.videoWidth / video.videoHeight
-
-    let cropWidth = video.videoWidth
-    let cropHeight = video.videoHeight
-    let cropX = 0
-    let cropY = 0
-
-    if (videoAspect > screenAspect) {
-      cropWidth = video.videoHeight * screenAspect
-      cropX = (video.videoWidth - cropWidth) / 2
-    } else {
-      cropHeight = video.videoWidth / screenAspect
-      cropY = (video.videoHeight - cropHeight) / 2
-    }
-
-    const sourceWidth = cropWidth / zoomLevel
-    const sourceHeight = cropHeight / zoomLevel
-    const sourceX = cropX + (cropWidth - sourceWidth) / 2
-    const sourceY = cropY + (cropHeight - sourceHeight) / 2
-
-    canvas.width = 1080
-    canvas.height = 1080 / screenAspect
-    
     const ctx = canvas.getContext("2d")
-    if (ctx) {
+    if (!ctx) return
+
+    if (isLandscapeStream) {
+      // 가로 스트림(videoWidth > videoHeight)을 90° 회전해 세로 캔버스에 캡처
+      canvas.width = 1080
+      canvas.height = Math.round(1080 / screenAspect)
+
+      ctx.translate(canvas.width / 2, canvas.height / 2)
+      const rotDir = facingMode === "user" ? -1 : 1
+      ctx.rotate(rotDir * Math.PI / 2)
+      if (facingMode === "user") ctx.scale(-1, 1)
+
+      // 회전된 좌표계에서 canvas.height가 가로축, canvas.width가 세로축이 됨
+      const dstW = canvas.height
+      const dstH = canvas.width
+      const srcW = video.videoWidth / zoomLevel
+      const srcH = video.videoHeight / zoomLevel
+      const srcX = (video.videoWidth - srcW) / 2
+      const srcY = (video.videoHeight - srcH) / 2
+
+      ctx.drawImage(video, srcX, srcY, srcW, srcH, -dstW / 2, -dstH / 2, dstW, dstH)
+    } else {
+      // 세로(portrait) 스트림: 기존 object-cover 크롭 방식
+      const videoAspect = video.videoWidth / video.videoHeight
+      let cropWidth = video.videoWidth
+      let cropHeight = video.videoHeight
+      let cropX = 0
+      let cropY = 0
+
+      if (videoAspect > screenAspect) {
+        cropWidth = video.videoHeight * screenAspect
+        cropX = (video.videoWidth - cropWidth) / 2
+      } else {
+        cropHeight = video.videoWidth / screenAspect
+        cropY = (video.videoHeight - cropHeight) / 2
+      }
+
+      const sourceWidth = cropWidth / zoomLevel
+      const sourceHeight = cropHeight / zoomLevel
+      const sourceX = cropX + (cropWidth - sourceWidth) / 2
+      const sourceY = cropY + (cropHeight - sourceHeight) / 2
+
+      canvas.width = 1080
+      canvas.height = Math.round(1080 / screenAspect)
+
       if (facingMode === "user") {
         ctx.translate(canvas.width, 0)
         ctx.scale(-1, 1)
       }
-      
-      ctx.drawImage(
-        video,
-        sourceX, sourceY, sourceWidth, sourceHeight,
-        0, 0, canvas.width, canvas.height
-      )
-      
-      const imageData = canvas.toDataURL("image/jpeg", 0.9)
-      
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop())
-      }
-      
-      onCapture(imageData)
+
+      ctx.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, canvas.width, canvas.height)
     }
+
+    const imageData = canvas.toDataURL("image/jpeg", 0.9)
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop())
+    }
+    onCapture(imageData)
   }
 
   const toggleCamera = () => {
     setFacingMode(prev => prev === "environment" ? "user" : "environment")
-    setZoomLevel(1) 
+    setZoomLevel(1)
   }
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -155,8 +180,24 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
     initialDistance.current = null
   }
 
+  // 가로 스트림을 세로 화각으로 보여주기 위한 비디오 스타일
+  const videoStyle: React.CSSProperties = isLandscapeStream
+    ? {
+        position: "absolute",
+        // 회전 전: 요소를 세로 길이×가로 길이로 설정, 90° 회전 후 컨테이너를 가득 채움
+        width: "100dvh",
+        height: "100dvw",
+        top: "50%",
+        left: "50%",
+        objectFit: "cover",
+        transform: `translate(-50%, -50%) rotate(${facingMode === "user" ? -90 : 90}deg) scale(${zoomLevel})`,
+      }
+    : {
+        transform: `scale(${facingMode === "user" ? -zoomLevel : zoomLevel}, ${zoomLevel})`,
+      }
+
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black z-50 overflow-hidden"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -174,16 +215,14 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
             autoPlay
             playsInline
             muted
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-75 ease-out"
-            style={{ 
-              transform: `scale(${facingMode === "user" ? -zoomLevel : zoomLevel}, ${zoomLevel})`
-            }}
+            className={`${isLandscapeStream ? "" : "absolute inset-0 w-full h-full object-cover"} transition-transform duration-75 ease-out`}
+            style={videoStyle}
           />
         )}
       </div>
 
       <div className="relative z-10 flex flex-col h-full justify-between pointer-events-none">
-        
+
         <div className="p-4 flex justify-end items-center pointer-events-auto">
           <button
             onClick={handleClose}
@@ -195,7 +234,7 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
         </div>
 
         <div className="flex flex-col w-full pointer-events-auto">
-          
+
           <div className="flex justify-center mb-6">
             <div className="flex items-center gap-4 px-5 py-2 bg-black/40 backdrop-blur-md rounded-full shadow-lg">
               {zoomLevels.map((level) => (
@@ -204,7 +243,7 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
                   onClick={() => setZoomLevel(level)}
                   className={`w-9 h-9 flex items-center justify-center rounded-full text-sm font-semibold transition-colors ${
                     Math.abs(zoomLevel - level) < 0.1
-                      ? "bg-[#FF6200] text-black" 
+                      ? "bg-[#FF6200] text-black"
                       : "text-white hover:bg-white/20"
                   }`}
                 >
@@ -216,7 +255,7 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
 
           <div className="pb-12 pt-6 flex flex-col items-center justify-center bg-gradient-to-t from-black/50 to-transparent">
             <div className="relative flex items-center justify-center w-full max-w-sm px-8">
-              
+
               <button
                 onClick={handleCapture}
                 disabled={!isReady}
@@ -235,7 +274,7 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
               </button>
             </div>
           </div>
-          
+
         </div>
       </div>
 
