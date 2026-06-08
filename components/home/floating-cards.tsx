@@ -51,6 +51,12 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   const imageContainerRef = useRef<HTMLDivElement>(null)
   const [imageWidth, setImageWidth] = useState<number | undefined>(undefined)
 
+  const carouselDragRef = useRef(false)
+  const carouselLastXRef = useRef(0)
+  const carouselVelocityRef = useRef(0)
+  const carouselTotalDragRef = useRef(0)
+  const carouselWasDraggedRef = useRef(false)
+
   const handleVote = (postId: string, optionIndex: number) => {
     setFeedbackQueue(prevQueue => {
       const newQueue = [...prevQueue]
@@ -92,22 +98,18 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
     return () => observer.disconnect()
   }, [selectedPost])
 
-  // 🔄 띠 회전 & 정중앙 타겟 추적 로직
+  // 🔄 띠 관성 감속 & 정중앙 타겟 추적 로직
   useEffect(() => {
     let animationFrameId: number
 
     const rotate = () => {
-      const now = Date.now()
-      const newestPostAge = userPostsRef.current.length > 0 
-        ? Math.min(...userPostsRef.current.map(p => now - p.createdAt))
-        : 9999
-      
-      if (newestPostAge >= 3000) {
-        angleRef.current -= 0.08 
+      if (!carouselDragRef.current && Math.abs(carouselVelocityRef.current) > 0.01) {
+        carouselVelocityRef.current *= 0.92
+        angleRef.current += carouselVelocityRef.current
       }
-      
+
       setAutoAngle(angleRef.current)
-      setTick(now) 
+      setTick(Date.now())
 
       const totalCards = userPostsRef.current.length
       if (totalCards > 0) {
@@ -119,21 +121,20 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           radius = HALF_CHORD / Math.sin(Math.PI / totalCards)
         }
         const anglePerCard = 2 * Math.asin(HALF_CHORD / radius) * (180 / Math.PI)
-        
+
         let bestIndex = 0
         let minDiff = 9999
-        for(let i = 0; i <= totalCards; i++) {
-            let visualAngle = (i * anglePerCard + angleRef.current) % 360
-            if (visualAngle < -180) visualAngle += 360
-            if (visualAngle > 180) visualAngle -= 360
-
-            if (Math.abs(visualAngle) < minDiff) {
-                minDiff = Math.abs(visualAngle)
-                bestIndex = i
-            }
+        for (let i = 0; i <= totalCards; i++) {
+          let visualAngle = (i * anglePerCard + angleRef.current) % 360
+          if (visualAngle < -180) visualAngle += 360
+          if (visualAngle > 180) visualAngle -= 360
+          if (Math.abs(visualAngle) < minDiff) {
+            minDiff = Math.abs(visualAngle)
+            bestIndex = i
+          }
         }
         if (typeof window !== 'undefined') {
-            (window as any).zzuggumiInsertIndex = bestIndex
+          (window as any).zzuggumiInsertIndex = bestIndex
         }
       }
 
@@ -171,6 +172,33 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
     }
   }, [currentQueueIndex])
+
+  const handleCarouselPointerDown = (e: React.PointerEvent) => {
+    carouselDragRef.current = true
+    carouselLastXRef.current = e.clientX
+    carouselTotalDragRef.current = 0
+    carouselWasDraggedRef.current = false
+    carouselVelocityRef.current = 0
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+
+  const handleCarouselPointerMove = (e: React.PointerEvent) => {
+    if (!carouselDragRef.current) return
+    const deltaX = e.clientX - carouselLastXRef.current
+    carouselLastXRef.current = e.clientX
+    carouselTotalDragRef.current += Math.abs(deltaX)
+    if (carouselTotalDragRef.current > 5) {
+      carouselWasDraggedRef.current = true
+    }
+    const angleDelta = -deltaX * 0.35
+    angleRef.current += angleDelta
+    carouselVelocityRef.current = angleDelta
+    setAutoAngle(angleRef.current)
+  }
+
+  const handleCarouselPointerUp = () => {
+    carouselDragRef.current = false
+  }
 
   const handleCardClick = (startIndex: number) => {
     const queue = [
@@ -491,12 +519,14 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
   // -------------------------------------------------------------
   // 🌌 [2] 3D 원형 띠(Carousel) 레이아웃
   // -------------------------------------------------------------
-  const isCarouselPaused = userPosts.length > 0 && userPosts.some(p => (tick - p.createdAt) < 3000)
-
   return (
-    <div 
+    <div
       ref={containerRef}
       className="relative w-full h-full overflow-hidden bg-white touch-none"
+      onPointerDown={handleCarouselPointerDown}
+      onPointerMove={handleCarouselPointerMove}
+      onPointerUp={handleCarouselPointerUp}
+      onPointerCancel={handleCarouselPointerUp}
     >
       <div 
         className="absolute inset-y-0 left-0 w-full h-[calc(100vh-80px)] pointer-events-none flex items-center justify-center -translate-y-[10vh]"
@@ -553,10 +583,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
           let transitionStr = "none"
 
-          if (isCarouselPaused && !isNewUpload) {
-            transitionStr = "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s ease"
-          }
-
           if (isNewUpload) {
             transitionStr = "none"
 
@@ -600,6 +626,7 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
             <div
               key={post.id}
               onClick={() => {
+                if (carouselWasDraggedRef.current) return
                 if (cosVal > 0.8 || isNewUpload) handleCardClick(i)
               }}
               className="absolute w-[220px] h-[290px] origin-center pointer-events-auto cursor-pointer"
