@@ -350,7 +350,7 @@ export function FloatingCards({ userPosts = [], onVote }: FloatingCardsProps) {
 
           <div
             ref={imageContainerRef}
-            className="relative h-full max-h-[75vh] max-w-full aspect-[22/29] shrink-0 select-none"
+            className="relative w-full aspect-[22/29] shrink-0 select-none"
             style={{ touchAction: "none" }}
             onMouseDown={(e) => handleSwipeStart(e.clientY)} 
             onMouseMove={(e) => handleSwipeMove(e.clientY)}
