@@ -30,36 +30,31 @@ export default function Home() {
   const [posts, setPosts] = useState<Post[]>([])
   const [isTransitioning, setIsTransitioning] = useState(false)
 
+  const loadPosts = () => fetchPosts().then(setPosts).catch(console.error)
+
   // 초기 로드
+  useEffect(() => { loadPosts() }, [])
+
+  // 30초마다 폴링 + 앱으로 돌아올 때 새로고침
   useEffect(() => {
-    fetchPosts().then(setPosts).catch(console.error)
+    const interval = setInterval(loadPosts, 30000)
+    const onVisible = () => { if (document.visibilityState === 'visible') loadPosts() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [])
 
-  // 실시간: 다른 유저가 업로드하면 자동 반영
+  // 실시간: 다른 유저가 업로드하면 즉시 반영
   useEffect(() => {
     const channel = supabase
       .channel('posts-realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, payload => {
-        const row = payload.new as Record<string, unknown>
-        const newPost: Post = {
-          id: row.id as string,
-          imageData: row.image_url as string,
-          questionText: row.question_text as string,
-          createdAt: row.created_at as number,
-          poll: (row.poll as PollOption[]) ?? undefined,
-        }
-        setPosts(prev => {
-          if (prev.some(p => p.id === newPost.id)) return prev
-          return [newPost, ...prev]
-        })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, () => {
+        loadPosts()
       })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'posts' }, payload => {
-        const row = payload.new as Record<string, unknown>
-        setPosts(prev => prev.map(p =>
-          p.id === (row.id as string)
-            ? { ...p, poll: (row.poll as PollOption[]) ?? undefined }
-            : p
-        ))
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'posts' }, () => {
+        loadPosts()
       })
       .subscribe()
 
