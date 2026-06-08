@@ -126,7 +126,7 @@ export function FloatingCards({ userPosts = [], onVote }: FloatingCardsProps) {
       const totalCards = userPostsRef.current.length
       if (totalCards > 0) {
         const CARD_WIDTH = 132
-        const GAP = 124
+        const GAP = 62
         const HALF_CHORD = (CARD_WIDTH + GAP) / 2
         let radius = 800
         if (totalCards > 14) {
@@ -223,14 +223,12 @@ export function FloatingCards({ userPosts = [], onVote }: FloatingCardsProps) {
     setSelectedPost(userPosts[startIndex])
     setSwipeOffset(0)
     setSwipeOutDirection(null)
-    setShowExitModal(queue.length === 0)
+    setShowExitModal(false)
     setShowStampToast(false)
 
-    const hideTutorial = localStorage.getItem("hide_feedback_tutorial_v2")
-    if (hideTutorial === "true") {
-      setShowTutorial(false)
-    } else {
-      setShowTutorial(queue.length > 0)
+    if (queue.length > 0) {
+      const hideTutorial = localStorage.getItem("hide_feedback_tutorial_v2")
+      setShowTutorial(hideTutorial !== "true")
     }
   }
 
@@ -310,6 +308,23 @@ export function FloatingCards({ userPosts = [], onVote }: FloatingCardsProps) {
   // 📱 [1] 스와이프 피드백 모드 레이아웃
   // -------------------------------------------------------------
   if (selectedPost) {
+    if (feedbackQueue.length === 0 && !showExitModal) {
+      return (
+        <div className="fixed inset-0 bg-white z-50 flex flex-col">
+          <div className="h-16 w-full flex justify-end items-center px-6">
+            <button onClick={handleExitFeedback} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-zinc-100 transition-colors">
+              <X className="w-6 h-6 text-black" strokeWidth={1.5} />
+            </button>
+          </div>
+          <div className="flex-1 flex flex-col items-center justify-center gap-3">
+            <div className="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-1">✅</div>
+            <p className="text-sm font-medium text-zinc-800">피드백할 사진이 없어요.</p>
+            <p className="text-xs text-zinc-400 text-center">새로운 사진이 올라오면 다시 확인해보세요.</p>
+          </div>
+        </div>
+      )
+    }
+
     const activePost = currentQueueIndex < feedbackQueue.length ? feedbackQueue[currentQueueIndex] : feedbackQueue[feedbackQueue.length - 1]
     const nextPost = currentQueueIndex + 1 < feedbackQueue.length ? feedbackQueue[currentQueueIndex + 1] : null
     const completedCount = currentQueueIndex
@@ -580,7 +595,7 @@ export function FloatingCards({ userPosts = [], onVote }: FloatingCardsProps) {
           const totalCards = userPosts.length
           
           const CARD_WIDTH = 263
-          const GAP = 62
+          const GAP = 31
           const CHORD = CARD_WIDTH + GAP
           const HALF_CHORD = CHORD / 2
 
