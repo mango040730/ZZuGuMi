@@ -295,7 +295,7 @@ export function UploadPreviewScreen({
         }
       }
 
-      const mergedImageData = canvas.toDataURL("image/jpeg", 0.9)
+      const mergedImageData = canvas.toDataURL("image/jpeg", 0.85)
       onUpload(questionText, mergedImageData, pollOptions)
     } catch (e) {
       console.error(e)

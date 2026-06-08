@@ -90,17 +90,18 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
+    // localStorage 용량 절약을 위해 저장 해상도를 720px 기준으로 제한
+    const CAPTURE_WIDTH = 720
+
     if (isLandscapeStream) {
-      // 가로 스트림(videoWidth > videoHeight)을 90° 회전해 세로 캔버스에 캡처
-      canvas.width = 1080
-      canvas.height = Math.round(1080 / targetAspect)
+      canvas.width = CAPTURE_WIDTH
+      canvas.height = Math.round(CAPTURE_WIDTH / targetAspect)
 
       ctx.translate(canvas.width / 2, canvas.height / 2)
       const rotDir = facingMode === "user" ? -1 : 1
       ctx.rotate(rotDir * Math.PI / 2)
       if (facingMode === "user") ctx.scale(-1, 1)
 
-      // 회전된 좌표계에서 canvas.height가 가로축, canvas.width가 세로축이 됨
       const dstW = canvas.height
       const dstH = canvas.width
       const srcW = video.videoWidth / zoomLevel
@@ -110,7 +111,6 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
 
       ctx.drawImage(video, srcX, srcY, srcW, srcH, -dstW / 2, -dstH / 2, dstW, dstH)
     } else {
-      // 세로(portrait) 스트림: 22:29 비율로 중앙 크롭
       const videoAspect = video.videoWidth / video.videoHeight
       let cropWidth = video.videoWidth
       let cropHeight = video.videoHeight
@@ -130,8 +130,8 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
       const sourceX = cropX + (cropWidth - sourceWidth) / 2
       const sourceY = cropY + (cropHeight - sourceHeight) / 2
 
-      canvas.width = 1080
-      canvas.height = Math.round(1080 / targetAspect)
+      canvas.width = CAPTURE_WIDTH
+      canvas.height = Math.round(CAPTURE_WIDTH / targetAspect)
 
       if (facingMode === "user") {
         ctx.translate(canvas.width, 0)
@@ -141,7 +141,7 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
       ctx.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, canvas.width, canvas.height)
     }
 
-    const imageData = canvas.toDataURL("image/jpeg", 0.9)
+    const imageData = canvas.toDataURL("image/jpeg", 0.85)
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop())
     }
