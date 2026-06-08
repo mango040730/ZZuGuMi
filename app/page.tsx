@@ -114,7 +114,7 @@ export default function Home() {
   return (
     <>
       <main
-        className={`relative flex flex-col w-[390px] h-[844px] bg-white overflow-hidden transition-opacity duration-300 ${
+        className={`relative flex flex-col w-full h-dvh md:w-[390px] md:h-[844px] bg-white overflow-hidden transition-opacity duration-300 ${
           currentScreen !== "home" ? "opacity-0" : "opacity-100"
         }`}
       >

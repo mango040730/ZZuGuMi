@@ -30,13 +30,11 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
       setIsReady(false)
       
       try {
-        const screenAspect = window.innerWidth / window.innerHeight
-
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: facingMode,
             width: { ideal: 1080 },
-            aspectRatio: { ideal: screenAspect },
+            height: { ideal: 1920 },
           }
         })
         
@@ -78,10 +76,9 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
     
     if (!video || !canvas || !container) return
     
-    // 화면에 꽉 찬 상태 그대로를 캡처하기 위한 로직
     const screenAspect = container.clientWidth / container.clientHeight
     const videoAspect = video.videoWidth / video.videoHeight
-    
+
     let cropWidth = video.videoWidth
     let cropHeight = video.videoHeight
     let cropX = 0
