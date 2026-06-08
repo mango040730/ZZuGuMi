@@ -240,13 +240,31 @@ export function UploadPreviewScreen({
       if (strokes.length > 0 || currentStroke.length > 0) {
         const strokeScale = outWidth / clientWidth
         const allStrokes = currentStroke.length > 0 ? [...strokes, currentStroke] : strokes
-        const blurCanvas = document.createElement("canvas")
-        blurCanvas.width = outWidth
-        blurCanvas.height = outHeight
-        const blurCtx = blurCanvas.getContext("2d")
-        if (blurCtx) {
-          blurCtx.filter = `blur(${16 * strokeScale}px)`
-          blurCtx.drawImage(img, sx, sy, sw, sh, 0, 0, outWidth, outHeight)
+
+        // ctx.filter('blur') is unsupported on iOS Safari — use pixelation instead:
+        // shrink image (smoothing ON) then scale back up (smoothing OFF) to get mosaic blocks
+        const blockSize = Math.max(4, Math.round(20 * strokeScale))
+        const smallW = Math.max(1, Math.round(outWidth / blockSize))
+        const smallH = Math.max(1, Math.round(outHeight / blockSize))
+
+        const smallCanvas = document.createElement("canvas")
+        smallCanvas.width = smallW
+        smallCanvas.height = smallH
+        const smallCtx = smallCanvas.getContext("2d")
+
+        const mosaicCanvas = document.createElement("canvas")
+        mosaicCanvas.width = outWidth
+        mosaicCanvas.height = outHeight
+        const mosaicCtx = mosaicCanvas.getContext("2d")
+
+        if (smallCtx && mosaicCtx) {
+          smallCtx.imageSmoothingEnabled = true
+          smallCtx.imageSmoothingQuality = "high"
+          smallCtx.drawImage(img, sx, sy, sw, sh, 0, 0, smallW, smallH)
+
+          mosaicCtx.imageSmoothingEnabled = false
+          mosaicCtx.drawImage(smallCanvas, 0, 0, outWidth, outHeight)
+
           const maskCanvas = document.createElement("canvas")
           maskCanvas.width = outWidth
           maskCanvas.height = outHeight
@@ -275,7 +293,7 @@ export function UploadPreviewScreen({
             maskCtx.shadowColor = "transparent"
             maskCtx.shadowBlur = 0
             maskCtx.globalCompositeOperation = "source-in"
-            maskCtx.drawImage(blurCanvas, 0, 0)
+            maskCtx.drawImage(mosaicCanvas, 0, 0)
             ctx.globalCompositeOperation = "source-over"
             ctx.drawImage(maskCanvas, 0, 0)
           }
