@@ -30,12 +30,13 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
       setIsReady(false)
       
       try {
+        const screenAspect = window.innerWidth / window.innerHeight
+
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: facingMode,
-            // 💡 수정된 부분: height 제약을 없애서 
-            // 폰 카메라의 원본 화각(넓은 시야각)을 1차로 잘라먹는 현상을 방지합니다.
-            width: { ideal: 1080 } 
+            width: { ideal: 1080 },
+            aspectRatio: { ideal: screenAspect },
           }
         })
         
