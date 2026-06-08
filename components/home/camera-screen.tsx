@@ -86,7 +86,7 @@ export function CameraScreen({ onClose, onCapture }: CameraScreenProps) {
 
     if (!video || !canvas || !container) return
 
-    const targetAspect = 22 / 29  // 피드백/업로드 프리뷰 프레임과 동일한 비율
+    const targetAspect = container.clientWidth / container.clientHeight  // 화면 비율로 캡처
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 

@@ -314,14 +314,15 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           )}
         </div>
 
-        <div 
-          className={`absolute top-16 left-0 w-full z-50 flex justify-center px-4 pointer-events-none transition-all duration-300 ease-out ${
-            showStampToast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
+        <div
+          className={`absolute top-16 left-0 w-full z-50 flex justify-center px-4 transition-all duration-300 ease-out ${
+            showStampToast ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-4 pointer-events-none"
           }`}
         >
-          <div 
-            className="bg-[#FCDFD3] border border-[#F5C2AF] rounded-[24px] p-5 flex flex-col gap-2 shadow-none"
+          <div
+            className="bg-[#FCDFD3] border border-[#F5C2AF] rounded-[24px] p-5 flex flex-col gap-2 shadow-none active:opacity-70 transition-opacity cursor-pointer"
             style={{ width: imageWidth ? `${imageWidth}px` : '100%', maxWidth: '100%' }}
+            onClick={() => setShowStampToast(false)}
           >
             <div className="flex items-center gap-1.5">
               <span className="text-xl">🎉</span>
@@ -346,19 +347,16 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
           </button>
         </div>
 
-        <div className="flex-1 w-full px-5 pb-2 min-h-0 flex flex-col justify-center items-center relative z-10">
-          <div 
-            className="flex justify-start mb-3"
-            style={{ width: imageWidth ? `${imageWidth}px` : '100%', maxWidth: '100%' }}
-          >
+        <div className="flex-1 w-full px-5 pb-2 min-h-0 flex flex-col items-center relative z-10">
+          <div className="w-full mb-3">
             <span className="text-[17px] font-bold text-zinc-800 tracking-wider">
               {completedCount}개 피드백 중
             </span>
           </div>
 
-          <div 
+          <div
             ref={imageContainerRef}
-            className="relative h-full max-h-[75vh] max-w-full aspect-[22/29] shrink-0 select-none"
+            className="relative w-full flex-1 min-h-0 select-none"
             style={{ touchAction: "none" }}
             onMouseDown={(e) => handleSwipeStart(e.clientY)} 
             onMouseMove={(e) => handleSwipeMove(e.clientY)}
@@ -525,9 +523,6 @@ export function FloatingCards({ userPosts = [] }: FloatingCardsProps) {
 
         </div>
 
-        <div className="h-8 w-full flex justify-center items-center select-none pb-2">
-          <div className="w-36 h-1 bg-zinc-300 rounded-full" />
-        </div>
       </div>
     )
   }
