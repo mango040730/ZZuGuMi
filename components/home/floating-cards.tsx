@@ -62,6 +62,7 @@ export function FloatingCards({ userPosts = [], onVote }: FloatingCardsProps) {
     try { return new Set(JSON.parse(localStorage.getItem('zzuggumi_reviewed') || '[]')) } catch { return new Set() }
   })
 
+  const isSwipingRef = useRef(false)
   const carouselDragRef = useRef(false)
   const carouselLastXRef = useRef(0)
   const carouselVelocityRef = useRef(0)
@@ -217,7 +218,12 @@ export function FloatingCards({ userPosts = [], onVote }: FloatingCardsProps) {
       ...userPosts.slice(startIndex),
       ...userPosts.slice(0, startIndex),
     ]
-    const queue = allPosts.filter(post => !reviewedPosts.has(post.id))
+    const seen = new Set<string>()
+    const queue = allPosts.filter(post => {
+      if (reviewedPosts.has(post.id) || seen.has(post.id)) return false
+      seen.add(post.id)
+      return true
+    })
     setFeedbackQueue(queue)
     setCurrentQueueIndex(0)
     setSelectedPost(userPosts[startIndex])
@@ -257,6 +263,9 @@ export function FloatingCards({ userPosts = [], onVote }: FloatingCardsProps) {
   }
 
   const triggerSwipeOut = (direction: "up" | "down") => {
+    if (isSwipingRef.current) return
+    isSwipingRef.current = true
+
     const currentPost = feedbackQueue[currentQueueIndex]
     if (currentPost) {
       const newReviewed = new Set(reviewedPosts)
@@ -269,6 +278,7 @@ export function FloatingCards({ userPosts = [], onVote }: FloatingCardsProps) {
     setSwipeOffset(direction === "down" ? 800 : -800)
 
     setTimeout(() => {
+      isSwipingRef.current = false
       const nextIndex = currentQueueIndex + 1
       if (nextIndex < feedbackQueue.length) {
         setIsResetting(true)

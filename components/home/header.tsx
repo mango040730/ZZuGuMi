@@ -6,7 +6,7 @@ export function Header() {
   return (
     <header className="flex items-center justify-between px-5 pb-4 bg-white sticky top-0 z-40 border-b border-zinc-100" style={{ paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
       <h1 className="text-2xl font-bold tracking-tight text-foreground">
-        ZZuGGUM<span className="text-[#FF6200]">i</span>
+        ZZUGGUM<span className="text-[#FF6200]">i</span>
       </h1>
       <button 
         className="w-8 h-8 rounded-full border-[2.5px] border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
