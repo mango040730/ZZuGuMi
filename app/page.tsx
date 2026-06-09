@@ -28,9 +28,16 @@ export default function Home() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("home")
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
   const [posts, setPosts] = useState<Post[]>([])
-  const [isTransitioning, setIsTransitioning] = useState(false)
-
-  const loadPosts = () => fetchPosts().then(setPosts).catch(console.error)
+  const loadPosts = () => fetchPosts().then(newPosts => {
+    setPosts(prev => {
+      if (prev.length === 0) return newPosts
+      const newPostMap = new Map(newPosts.map(p => [p.id, p]))
+      const existingIds = new Set(prev.map(p => p.id))
+      const kept = prev.filter(p => newPostMap.has(p.id)).map(p => newPostMap.get(p.id)!)
+      const added = newPosts.filter(p => !existingIds.has(p.id))
+      return [...added, ...kept]
+    })
+  }).catch(console.error)
 
   // 초기 로드
   useEffect(() => { loadPosts() }, [])
@@ -86,7 +93,6 @@ export default function Home() {
     }
 
     // 즉시 로컬에 반영 (낙관적 업데이트)
-    setIsTransitioning(true)
     setPosts(prev => {
       let insertIndex = typeof window !== 'undefined' ? (window as any).zzuggumiInsertIndex : 0
       if (!insertIndex || insertIndex < 0) insertIndex = 0
@@ -97,7 +103,6 @@ export default function Home() {
     })
     setCapturedImage(null)
     setCurrentScreen("home")
-    setTimeout(() => setIsTransitioning(false), 600)
 
     // 서버에 저장 (백그라운드)
     createPost(newPost, imageData).catch(console.error)
