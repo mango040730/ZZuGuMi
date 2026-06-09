@@ -402,7 +402,7 @@ export function FloatingCards({ userPosts = [], onVote }: FloatingCardsProps) {
           </button>
         </div>
 
-        <div className="flex-1 w-full px-5 pb-2 min-h-0 flex flex-col justify-center items-center relative z-10">
+        <div className="flex-1 w-full px-5 pb-2 min-h-0 flex flex-col justify-start pt-6 items-center relative z-10">
           <div
             className="flex justify-start mb-3"
             style={{ width: imageWidth ? `${imageWidth}px` : '100%', maxWidth: '100%' }}
