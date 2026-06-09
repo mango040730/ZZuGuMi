@@ -370,7 +370,7 @@ export function FloatingCards({ userPosts = [], onVote }: FloatingCardsProps) {
         </div>
 
         <div
-          className={`absolute top-16 left-0 w-full z-50 flex justify-center px-4 transition-all duration-300 ease-out ${
+          className={`absolute top-3 left-0 w-full z-50 flex justify-center px-4 transition-all duration-300 ease-out ${
             showStampToast ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-4 pointer-events-none"
           }`}
         >
