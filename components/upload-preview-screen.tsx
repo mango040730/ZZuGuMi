@@ -236,11 +236,10 @@ export function UploadPreviewScreen({
         const strokeScale = outWidth / clientWidth
         const allStrokes = currentStroke.length > 0 ? [...strokes, currentStroke] : strokes
 
-        // ctx.filter('blur') is unsupported on iOS Safari — use pixelation instead:
-        // shrink image (smoothing ON) then scale back up (smoothing OFF) to get mosaic blocks
-        const blockSize = Math.max(4, Math.round(20 * strokeScale))
-        const smallW = Math.max(1, Math.round(outWidth / blockSize))
-        const smallH = Math.max(1, Math.round(outHeight / blockSize))
+        // Blur via multi-step downsample → smooth upsample (works on all browsers including iOS Safari)
+        const blurFactor = Math.max(4, Math.round(20 * strokeScale))
+        const smallW = Math.max(1, Math.round(outWidth / blurFactor))
+        const smallH = Math.max(1, Math.round(outHeight / blurFactor))
 
         const smallCanvas = document.createElement("canvas")
         smallCanvas.width = smallW
@@ -257,7 +256,9 @@ export function UploadPreviewScreen({
           smallCtx.imageSmoothingQuality = "high"
           smallCtx.drawImage(img, 0, 0, outWidth, outHeight, 0, 0, smallW, smallH)
 
-          mosaicCtx.imageSmoothingEnabled = false
+          // smooth upsample → blur effect (not pixelation)
+          mosaicCtx.imageSmoothingEnabled = true
+          mosaicCtx.imageSmoothingQuality = "high"
           mosaicCtx.drawImage(smallCanvas, 0, 0, outWidth, outHeight)
 
           const maskCanvas = document.createElement("canvas")
